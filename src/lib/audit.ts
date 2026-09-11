@@ -1,5 +1,18 @@
 import "server-only";
 import { db } from "@/lib/db";
+import { Prisma } from "@/generated/prisma/client";
+
+/**
+ * A plain, JSON-serializable value. Deliberately not `Record<string, unknown>` -
+ * `unknown` permits values (functions, Date objects, etc.) that aren't
+ * actually valid JSON, which Prisma's JSON column type correctly rejects at
+ * the type level. This is the type-safe shape; the cast below still exists
+ * because Prisma declares its own nominal InputJsonValue type rather than
+ * accepting any structurally-equivalent type.
+ */
+type JsonRecord = {
+  [key: string]: string | number | boolean | null | JsonRecord | JsonRecord[];
+};
 
 interface AuditLogInput {
   gymId: string;
@@ -8,7 +21,7 @@ interface AuditLogInput {
   action: string;
   entityType: string;
   entityId?: string | null;
-  metadata?: Record<string, unknown>;
+  metadata?: JsonRecord;
 }
 
 /**
@@ -28,7 +41,7 @@ export async function recordAuditLog(input: AuditLogInput): Promise<void> {
         action: input.action,
         entityType: input.entityType,
         entityId: input.entityId ?? null,
-        metadata: input.metadata ?? undefined,
+        metadata: (input.metadata ?? undefined) as Prisma.InputJsonValue | undefined,
       },
     });
   } catch (error) {
