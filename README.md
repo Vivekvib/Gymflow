@@ -24,6 +24,13 @@ and **Member**.
   stored height (never stored redundantly).
 - **BMI calculator** - standalone page, instant client-side calculation
   (no server round trip needed for a pure formula).
+- **Workout plans** - admin builds a per-member plan (days containing
+  exercises, added/removed dynamically); the member sees a read-only view.
+  Editing always replaces the plan wholesale (no per-day diffing) - simple
+  and correct for a form that submits the whole plan each time.
+- **Settings** - admin can edit the gym's name/phone/email/address/city,
+  stored in the database (not env vars) - the admin sidebar and member
+  header both reflect the current name live after a save.
 - Database schema for **everything** in the original spec (progress
   tracking, workout plans, attendance, audit log) - see
   [What's next](#whats-next) for what's modeled but not yet wired to a page.
@@ -122,7 +129,7 @@ prisma/
 src/
 ├── app/
 │   ├── (auth)/admin/login, (auth)/member/login
-│   ├── admin/            # dashboard, members CRUD, record-payment, workouts & settings (placeholder pages)
+│   ├── admin/            # dashboard, members CRUD, record-payment, workouts, settings
 │   ├── member/           # member dashboard
 │   └── layout.tsx, error.tsx, loading.tsx, not-found.tsx, globals.css
 │
@@ -131,6 +138,8 @@ src/
 │   ├── members/          # service, actions, validation, member-id generator
 │   ├── payments/         # service, actions, validation, expiry (pure fn), providers/
 │   ├── progress/         # service, actions, validation, bmi.ts + goal-progress.ts (pure fns)
+│   ├── workouts/         # service, actions, validation (nested day/exercise plan editor)
+│   ├── gym/              # service, actions, validation - gym profile settings
 │   └── dashboard/         # admin dashboard aggregate stats
 │
 ├── components/
@@ -218,9 +227,8 @@ looks unfamiliar coming from Prisma 5/6 examples online:
 
 Modeled in the database, not yet wired to a page:
 
-- Workout plan admin UI (`/admin/workouts` is a placeholder)
 - Member profile editing
-- Attendance ingestion endpoint and admin settings page
+- Attendance ingestion endpoint
 - The full marketing landing page (facilities, plans, testimonials) - the
   public `/` route is a minimal placeholder today
 - Wiring `modules/payments/providers/razorpay-provider.ts` up to a real

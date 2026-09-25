@@ -7,14 +7,14 @@ export default async function MemberLayout({ children }: { children: React.React
   // middleware.ts already blocks unauthenticated requests to /member/* - this
   // is the second, independent layer (see modules/auth/guards.ts).
   const session = await requireMemberSession();
-  const member = await db.member.findUnique({
-    where: { id: session.memberId },
-    select: { name: true },
-  });
+  const [member, gym] = await Promise.all([
+    db.member.findUnique({ where: { id: session.memberId }, select: { name: true } }),
+    db.gym.findUnique({ where: { id: session.gymId }, select: { name: true } }),
+  ]);
 
   return (
     <div className="min-h-screen">
-      <MemberHeader memberName={member?.name ?? "Member"} />
+      <MemberHeader gymName={gym?.name ?? "GymFlow"} memberName={member?.name ?? "Member"} />
       <MemberNav />
       <main className="mx-auto max-w-3xl p-6">{children}</main>
     </div>

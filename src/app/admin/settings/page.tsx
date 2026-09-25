@@ -1,16 +1,28 @@
+import { notFound } from "next/navigation";
 import { requireAdminSession } from "@/modules/auth/guards";
+import { getGym } from "@/modules/gym/service";
+import { GymSettingsForm } from "@/components/admin/gym-settings-form";
 import { PageHeader } from "@/components/shared/page-header";
-import { EmptyState } from "@/components/shared/empty-state";
 
 export default async function AdminSettingsPage() {
-  await requireAdminSession();
+  const session = await requireAdminSession();
+  const gym = await getGym(session.gymId);
+
+  // Should be unreachable (the session was issued for this gym), but fail
+  // safely rather than crash if the gym row ever went missing.
+  if (!gym) notFound();
 
   return (
     <div>
-      <PageHeader title="Settings" description="Gym profile and configuration." />
-      <EmptyState
-        title="Settings management is next"
-        description="Gym name, contact details, and operating hours currently come from environment variables (NEXT_PUBLIC_GYM_*) - moving them to an editable admin settings page is scoped for the next implementation pass."
+      <PageHeader title="Settings" description="Gym profile and contact details." />
+      <GymSettingsForm
+        defaultValues={{
+          name: gym.name,
+          phone: gym.phone ?? "",
+          email: gym.email ?? "",
+          address: gym.address ?? "",
+          city: gym.city ?? "",
+        }}
       />
     </div>
   );

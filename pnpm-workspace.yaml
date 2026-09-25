@@ -1,7 +1,24 @@
+# pnpm supply-chain policy config.
+#
+# minimumReleaseAge: pnpm refuses to install a package version published
+# more recently than this (default 1440 minutes = 24h), as protection
+# against supply-chain attacks. Disabled here because this project's
+# lockfile intentionally pins current major versions (Next 16, React 19,
+# Prisma 7) that are sometimes only hours old when someone runs `pnpm
+# install` - see the README's Prisma 7 notes for context. If you'd rather
+# keep the protection on, delete this line and either wait ~24h after a
+# fresh `pnpm install` fails, or run `pnpm clean --lockfile && pnpm install`
+# to re-resolve.
+minimumReleaseAge: 0
+
+# Packages allowed to run install/postinstall scripts. pnpm 10+ blocks all
+# dependency build scripts by default; these five are legitimately needed
+# (argon2 compiles/fetches its native password-hashing binary, the Prisma
+# packages fetch their engine binaries, esbuild and unrs-resolver are build
+# tool internals pulled in transitively by tsx/eslint/tailwind).
 allowBuilds:
   '@prisma/engines': true
   argon2: true
   esbuild: true
   prisma: true
   unrs-resolver: true
-minimumReleaseAge: 0

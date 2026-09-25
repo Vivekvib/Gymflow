@@ -3,12 +3,11 @@ import { db } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
 
 /**
- * A plain, JSON-serializable value. Deliberately not `Record<string, unknown>` -
- * `unknown` permits values (functions, Date objects, etc.) that aren't
- * actually valid JSON, which Prisma's JSON column type correctly rejects at
- * the type level. This is the type-safe shape; the cast below still exists
- * because Prisma declares its own nominal InputJsonValue type rather than
- * accepting any structurally-equivalent type.
+ * A plain, JSON-serializable value. Deliberately not `Record<string,
+ * unknown>` - `unknown` permits values (functions, Date objects, etc.)
+ * that aren't actually valid JSON, which Prisma's JSON column type
+ * correctly rejects at the type level (caught by Vercel's real `prisma
+ * generate`, which is stricter here than this repo's local dev stub was).
  */
 type JsonRecord = {
   [key: string]: string | number | boolean | null | JsonRecord | JsonRecord[];

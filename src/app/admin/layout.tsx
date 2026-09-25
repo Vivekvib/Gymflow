@@ -7,14 +7,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   // middleware.ts already blocks unauthenticated requests to /admin/* - this
   // is the second, independent layer (see modules/auth/guards.ts).
   const session = await requireAdminSession();
-  const admin = await db.admin.findUnique({
-    where: { id: session.adminId },
-    select: { name: true },
-  });
+  const [admin, gym] = await Promise.all([
+    db.admin.findUnique({ where: { id: session.adminId }, select: { name: true } }),
+    db.gym.findUnique({ where: { id: session.gymId }, select: { name: true } }),
+  ]);
 
   return (
     <div className="flex min-h-screen">
-      <AdminSidebar />
+      <AdminSidebar gymName={gym?.name ?? "GymFlow"} />
       <div className="flex flex-1 flex-col">
         <AdminHeader adminName={admin?.name ?? "Admin"} />
         <main className="flex-1 p-6">{children}</main>

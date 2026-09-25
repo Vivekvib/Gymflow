@@ -85,8 +85,8 @@ export default async function MemberDashboardPage() {
           <CardTitle>Coming soon</CardTitle>
         </CardHeader>
         <CardContent className="text-sm text-[var(--color-ink-muted)]">
-          Workout plans and profile editing are modeled in the database already and are the next
-          slice of work - they are not yet wired up to a page here.
+          Profile editing is modeled in the database already and is the next slice of work - it
+          is not yet wired up to a page here.
         </CardContent>
       </Card>
     </div>
