@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { NotFoundError } from "@/lib/errors";
 import { recordAuditLog } from "@/lib/audit";
 import { isPast, isWithinNextDays } from "@/lib/dates";
-import { hashPassword } from "@/modules/auth/password";
+import { hashPassword, verifyPassword } from "@/modules/auth/password";
 import { generateMemberCode } from "@/modules/members/member-id";
 import { EXPIRING_SOON_DAYS, DEFAULT_PAGE_SIZE, DB_TRANSACTION_OPTIONS } from "@/config/constants";
 import { Prisma } from "@/generated/prisma/client";
@@ -203,6 +203,31 @@ export async function createMember(
   throw lastError instanceof Error ? lastError : new Error("Failed to create member");
 }
 
+/** Shared between admin-initiated and self-service profile updates. */
+function buildMemberUpdateData(input: UpdateMemberInput) {
+  return {
+    name: input.name,
+    phone: input.phone,
+    email: input.email,
+    gender: input.gender,
+    dateOfBirth: input.dateOfBirth ? new Date(input.dateOfBirth) : null,
+    heightCm: input.heightCm,
+    emergencyContactName: input.emergencyContactName,
+    emergencyContactPhone: input.emergencyContactPhone,
+  };
+}
+
+/** Rethrows a friendlier message for a duplicate-phone conflict, otherwise rethrows as-is. */
+function rethrowFriendlyPhoneConflict(error: unknown): never {
+  if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+    const target = Array.isArray(error.meta?.target) ? (error.meta.target as string[]) : [];
+    if (target.includes("phone")) {
+      throw new Error("That phone number is already in use by another member.");
+    }
+  }
+  throw error;
+}
+
 export async function updateMember(
   gymId: string,
   memberId: string,
@@ -211,19 +236,9 @@ export async function updateMember(
 ) {
   await getOwnedMemberOrThrow(gymId, memberId);
 
-  const updated = await db.member.update({
-    where: { id: memberId },
-    data: {
-      name: input.name,
-      phone: input.phone,
-      email: input.email,
-      gender: input.gender,
-      dateOfBirth: input.dateOfBirth ? new Date(input.dateOfBirth) : null,
-      heightCm: input.heightCm,
-      emergencyContactName: input.emergencyContactName,
-      emergencyContactPhone: input.emergencyContactPhone,
-    },
-  });
+  const updated = await db.member
+    .update({ where: { id: memberId }, data: buildMemberUpdateData(input) })
+    .catch(rethrowFriendlyPhoneConflict);
 
   await recordAuditLog({
     gymId,
@@ -235,6 +250,42 @@ export async function updateMember(
   });
 
   return updated;
+}
+
+/**
+ * Same field set as updateMember, but called by the member on their own
+ * record (no adminId, no audit log entry - self-service edits to one's own
+ * contact info aren't the kind of thing README's "administrative
+ * mutations" audit requirement is about).
+ */
+export async function updateOwnProfile(gymId: string, memberId: string, input: UpdateMemberInput) {
+  await getOwnedMemberOrThrow(gymId, memberId);
+
+  return db.member
+    .update({ where: { id: memberId }, data: buildMemberUpdateData(input) })
+    .catch(rethrowFriendlyPhoneConflict);
+}
+
+/**
+ * Requires the current password before accepting a new one - even with a
+ * valid session, a member shouldn't be able to silently lock out someone
+ * whose device/session they've gained temporary access to.
+ */
+export async function changeMemberPassword(
+  gymId: string,
+  memberId: string,
+  currentPassword: string,
+  newPassword: string,
+) {
+  const member = await getOwnedMemberOrThrow(gymId, memberId);
+
+  const isCurrentPasswordValid = await verifyPassword(member.passwordHash, currentPassword);
+  if (!isCurrentPasswordValid) {
+    throw new Error("Current password is incorrect.");
+  }
+
+  const passwordHash = await hashPassword(newPassword);
+  await db.member.update({ where: { id: memberId }, data: { passwordHash } });
 }
 
 export async function setMemberActive(

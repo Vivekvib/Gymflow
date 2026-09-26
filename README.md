@@ -17,7 +17,7 @@ and **Member**.
 - **Admin dashboard** - total/active members, payments today/this month,
   memberships expiring in 7/15/30 days.
 - **Member dashboard** - membership status, payment history, quick links
-  into progress and BMI.
+  into every member sub-page.
 - **Member progress tracking** - weight logging, body measurements, a goal
   (with an auto-computed progress bar toward the target weight), a
   weight-over-time chart, and BMI derived live from the latest weight +
@@ -31,6 +31,11 @@ and **Member**.
 - **Settings** - admin can edit the gym's name/phone/email/address/city,
   stored in the database (not env vars) - the admin sidebar and member
   header both reflect the current name live after a save.
+- **Member profile** - self-service editing of contact details, plus a
+  password change that requires the current password first (a valid
+  session alone isn't enough to silently take over the account). Admins
+  reset their own password separately via `pnpm admin:reset-password` -
+  there's no UI for that yet (see [Scripts](#scripts)).
 - Database schema for **everything** in the original spec (progress
   tracking, workout plans, attendance, audit log) - see
   [What's next](#whats-next) for what's modeled but not yet wired to a page.
@@ -56,7 +61,11 @@ and **Member**.
 ## Requirements
 
 - Node.js 24 LTS
-- pnpm 10+ (`corepack enable && corepack prepare pnpm@latest --activate` if you don't have it)
+- pnpm - version pinned via `packageManager` in `package.json` (currently
+  10.34.5). If you don't have pnpm yet: `corepack enable && corepack
+  prepare pnpm@10.34.5 --activate`. Don't use `pnpm@latest` here - pnpm 12+
+  ships as a native executable that Corepack's Windows support doesn't
+  reliably handle yet.
 - PostgreSQL 16+ (or Docker)
 - Git
 
@@ -110,6 +119,7 @@ pnpm lint          # eslint .
 pnpm typecheck     # tsc --noEmit
 pnpm db:generate / db:migrate / db:migrate:deploy / db:seed / db:studio / db:reset
 pnpm test / test:watch
+pnpm admin:reset-password <email> <new-password>   # the only way to change an admin's password today
 ```
 
 ## Project structure
@@ -227,7 +237,6 @@ looks unfamiliar coming from Prisma 5/6 examples online:
 
 Modeled in the database, not yet wired to a page:
 
-- Member profile editing
 - Attendance ingestion endpoint
 - The full marketing landing page (facilities, plans, testimonials) - the
   public `/` route is a minimal placeholder today

@@ -4,6 +4,14 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client";
 import { hashPassword } from "../src/modules/auth/password";
 
+/**
+ * Usage: pnpm admin:reset-password <email> <new-password>
+ *
+ * Connects using whatever DATABASE_URL is in .env - running this locally
+ * with a .env pointed at a production database updates that production
+ * admin's password directly; nothing needs to run on the deployed app
+ * itself.
+ */
 const [, , email, newPassword] = process.argv;
 
 if (!email || !newPassword) {

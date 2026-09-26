@@ -35,6 +35,19 @@ export const updateMemberSchema = z.object(sharedMemberFields);
 
 export type UpdateMemberInput = z.infer<typeof updateMemberSchema>;
 
+export const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, "Enter your current password"),
+    newPassword: z.string().min(8, "New password must be at least 8 characters"),
+    confirmPassword: z.string().min(1, "Confirm your new password"),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ["confirmPassword"],
+  });
+
+export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
+
 export const memberListQuerySchema = z.object({
   query: z.string().trim().optional(),
   status: z.enum(["ALL", "ACTIVE", "EXPIRING", "EXPIRED", "INACTIVE"]).default("ALL"),

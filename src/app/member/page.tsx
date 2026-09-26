@@ -58,35 +58,22 @@ export default async function MemberDashboardPage() {
       </Card>
 
       <Card>
-        <CardHeader className="flex items-center justify-between">
-          <CardTitle>Progress &amp; BMI</CardTitle>
-          <div className="flex gap-2">
-            <Link
-              href="/member/progress"
-              className="text-sm font-medium text-[var(--color-accent)] hover:underline"
-            >
-              View progress
-            </Link>
-            <Link
-              href="/member/bmi"
-              className="text-sm font-medium text-[var(--color-accent)] hover:underline"
-            >
-              BMI calculator
-            </Link>
-          </div>
-        </CardHeader>
-        <CardContent className="text-sm text-[var(--color-ink-muted)]">
-          Log your weight, track your goal, and check your BMI.
-        </CardContent>
-      </Card>
-
-      <Card>
         <CardHeader>
-          <CardTitle>Coming soon</CardTitle>
+          <CardTitle>Quick links</CardTitle>
         </CardHeader>
-        <CardContent className="text-sm text-[var(--color-ink-muted)]">
-          Profile editing is modeled in the database already and is the next slice of work - it
-          is not yet wired up to a page here.
+        <CardContent className="flex flex-wrap gap-4 text-sm">
+          <Link href="/member/progress" className="font-medium text-[var(--color-accent)] hover:underline">
+            Log weight &amp; track your goal
+          </Link>
+          <Link href="/member/workouts" className="font-medium text-[var(--color-accent)] hover:underline">
+            View your workout plan
+          </Link>
+          <Link href="/member/bmi" className="font-medium text-[var(--color-accent)] hover:underline">
+            BMI calculator
+          </Link>
+          <Link href="/member/profile" className="font-medium text-[var(--color-accent)] hover:underline">
+            Edit profile &amp; password
+          </Link>
         </CardContent>
       </Card>
     </div>
