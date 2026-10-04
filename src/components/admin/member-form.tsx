@@ -79,7 +79,7 @@ export function MemberForm(props: MemberFormProps) {
         <FieldError message={fieldErrors.name?.message} />
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
           <Label htmlFor="phone">Phone</Label>
           <Input id="phone" {...register("phone")} />
@@ -92,7 +92,7 @@ export function MemberForm(props: MemberFormProps) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
           <Label htmlFor="gender">Gender</Label>
           <Select id="gender" defaultValue="" {...register("gender")}>
@@ -114,7 +114,7 @@ export function MemberForm(props: MemberFormProps) {
         <Input id="dateOfBirth" type="date" {...register("dateOfBirth")} />
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
           <Label htmlFor="emergencyContactName">Emergency contact name</Label>
           <Input id="emergencyContactName" {...register("emergencyContactName")} />

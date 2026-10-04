@@ -3,6 +3,7 @@ import { requireAdminSession } from "@/modules/auth/guards";
 import { getMemberDetail } from "@/modules/members/service";
 import { MemberProfileCard } from "@/components/admin/member-profile";
 import { PaymentHistory } from "@/components/admin/payment-history";
+import { MemberResetPasswordForm } from "@/components/admin/member-reset-password-form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/shared/page-header";
 import { formatDate } from "@/lib/dates";
@@ -27,6 +28,19 @@ export default async function MemberDetailPage({ params }: MemberDetailPageProps
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-1">
           <MemberProfileCard member={member} />
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Account access</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <p className="text-sm text-[var(--color-ink-muted)]">
+                If this member is locked out, set a new password here and give it to them in
+                person.
+              </p>
+              <MemberResetPasswordForm memberId={member.id} />
+            </CardContent>
+          </Card>
 
           {member.goal ? (
             <Card>

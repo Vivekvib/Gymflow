@@ -24,7 +24,8 @@
     "admin:reset-password": "tsx scripts/reset-admin-password.ts"
   },
   "dependencies": {
-    "@prisma/adapter-pg": "^7.8.0",
+    "@neondatabase/serverless": "^0.10.4",
+    "@prisma/adapter-neon": "^7.8.0",
     "@prisma/client": "^7.8.0",
     "@hookform/resolvers": "^3.10.0",
     "argon2": "^0.44.0",
@@ -34,17 +35,17 @@
     "jose": "^5.9.6",
     "lucide-react": "^0.474.0",
     "next": "^16.2.6",
-    "pg": "^8.13.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-hook-form": "^7.54.2",
     "recharts": "^2.15.0",
     "tailwind-merge": "^2.6.0",
+    "ws": "^8.18.0",
     "zod": "^3.24.1"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
-    "@types/pg": "^8.11.10",
+    "@types/ws": "^8.5.13",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@tailwindcss/postcss": "^4.0.0",

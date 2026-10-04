@@ -1,31 +1,29 @@
-import Link from "next/link";
-import { buttonVariants } from "@/components/ui/button";
+import { getPublicGym } from "@/modules/gym/service";
 import { siteConfig } from "@/config/site";
+import { Navbar } from "@/components/marketing/navbar";
+import { Hero } from "@/components/marketing/hero";
+import { Facilities } from "@/components/marketing/facilities";
+import { MembershipPlans } from "@/components/marketing/membership-plans";
+import { WhyUs } from "@/components/marketing/why-us";
+import { ContactSection } from "@/components/marketing/contact-section";
+import { Footer } from "@/components/marketing/footer";
 
-/**
- * Deliberately minimal for now - this pass prioritized auth, member CRUD,
- * and payments (the "replace the notebook" core). The full premium landing
- * page (hero, facilities, membership plans, testimonials) described in the
- * README is the next slice of work; this page is a working placeholder,
- * not a stand-in for it.
- */
-export default function HomePage() {
+export default async function HomePage() {
+  const gym = await getPublicGym();
+  // Falls back to the env-var branding (config/site.ts) if the Gym row is
+  // ever missing - shouldn't happen after seeding, but the public page
+  // should never hard-crash over it.
+  const gymName = gym?.name ?? siteConfig.name;
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-6 bg-[var(--color-paper)] px-4 text-center">
-      <div>
-        <h1 className="text-2xl font-semibold text-[var(--color-ink)]">{siteConfig.name}</h1>
-        <p className="mt-2 text-sm text-[var(--color-ink-muted)]">
-          {siteConfig.phone} - {siteConfig.email}
-        </p>
-      </div>
-      <div className="flex gap-3">
-        <Link href="/member/login" className={buttonVariants({ variant: "primary" })}>
-          Member sign in
-        </Link>
-        <Link href="/admin/login" className={buttonVariants({ variant: "secondary" })}>
-          Admin sign in
-        </Link>
-      </div>
+    <main>
+      <Navbar gymName={gymName} />
+      <Hero gymName={gymName} city={gym?.city} />
+      <Facilities />
+      <MembershipPlans />
+      <WhyUs />
+      <ContactSection gym={gym} />
+      <Footer gymName={gymName} />
     </main>
   );
 }

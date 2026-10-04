@@ -1,8 +1,12 @@
 import "dotenv/config";
-import { Pool } from "pg";
-import { PrismaPg } from "@prisma/adapter-pg";
+import { neonConfig } from "@neondatabase/serverless";
+import { PrismaNeon } from "@prisma/adapter-neon";
+import ws from "ws";
 import { PrismaClient } from "../src/generated/prisma/client";
 import { hashPassword } from "../src/modules/auth/password";
+
+// See src/lib/db.ts for why this app uses Neon's driver instead of `pg`.
+neonConfig.webSocketConstructor = ws;
 
 /**
  * Usage: pnpm admin:reset-password <email> <new-password>
@@ -24,8 +28,7 @@ if (newPassword.length < 8) {
   process.exit(1);
 }
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-const adapter = new PrismaPg(pool);
+const adapter = new PrismaNeon({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
 
 async function main(adminEmail: string, plainTextPassword: string) {
@@ -44,5 +47,4 @@ main(email, newPassword)
   })
   .finally(async () => {
     await prisma.$disconnect();
-    await pool.end();
   });

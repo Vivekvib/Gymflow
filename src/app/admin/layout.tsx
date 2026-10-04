@@ -1,6 +1,7 @@
 import { requireAdminSession } from "@/modules/auth/guards";
 import { db } from "@/lib/db";
 import { AdminSidebar } from "@/components/admin/admin-sidebar";
+import { AdminMobileNav } from "@/components/admin/admin-mobile-nav";
 import { AdminHeader } from "@/components/admin/admin-header";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -15,9 +16,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <div className="flex min-h-screen">
       <AdminSidebar gymName={gym?.name ?? "GymFlow"} />
-      <div className="flex flex-1 flex-col">
+      <div className="flex min-w-0 flex-1 flex-col">
         <AdminHeader adminName={admin?.name ?? "Admin"} />
-        <main className="flex-1 p-6">{children}</main>
+        <AdminMobileNav />
+        <main className="flex-1 p-4 sm:p-6">{children}</main>
       </div>
     </div>
   );

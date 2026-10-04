@@ -8,7 +8,7 @@ interface MemberHeaderProps {
 
 export function MemberHeader({ gymName, memberName }: MemberHeaderProps) {
   return (
-    <header className="flex items-center justify-between border-b border-[var(--color-line)] bg-[var(--color-surface)] px-6 py-3">
+    <header className="flex items-center justify-between border-b border-[var(--color-line)] bg-[var(--color-surface)] px-4 py-3 sm:px-6">
       <div>
         <p className="text-sm font-semibold text-[var(--color-ink)]">{gymName}</p>
         <p className="text-xs text-[var(--color-ink-muted)]">Welcome, {memberName}</p>

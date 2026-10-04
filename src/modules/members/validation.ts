@@ -48,6 +48,16 @@ export const changePasswordSchema = z
 
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
 
+/**
+ * Distinct from changePasswordSchema - an admin resetting a locked-out
+ * member's password doesn't know (and shouldn't need) their old one.
+ */
+export const adminResetPasswordSchema = z.object({
+  newPassword: z.string().min(8, "Password must be at least 8 characters"),
+});
+
+export type AdminResetPasswordInput = z.infer<typeof adminResetPasswordSchema>;
+
 export const memberListQuerySchema = z.object({
   query: z.string().trim().optional(),
   status: z.enum(["ALL", "ACTIVE", "EXPIRING", "EXPIRED", "INACTIVE"]).default("ALL"),

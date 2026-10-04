@@ -267,6 +267,32 @@ export async function updateOwnProfile(gymId: string, memberId: string, input: U
 }
 
 /**
+ * For a member who's locked out (forgot their password). Unlike
+ * changeMemberPassword this doesn't ask for the old password - the admin
+ * is the recovery path, so it's audit-logged instead.
+ */
+export async function adminResetMemberPassword(
+  gymId: string,
+  memberId: string,
+  newPassword: string,
+  actorAdminId: string,
+) {
+  await getOwnedMemberOrThrow(gymId, memberId);
+
+  const passwordHash = await hashPassword(newPassword);
+  await db.member.update({ where: { id: memberId }, data: { passwordHash } });
+
+  await recordAuditLog({
+    gymId,
+    actorType: "ADMIN",
+    actorId: actorAdminId,
+    action: "MEMBER_PASSWORD_RESET",
+    entityType: "Member",
+    entityId: memberId,
+  });
+}
+
+/**
  * Requires the current password before accepting a new one - even with a
  * valid session, a member shouldn't be able to silently lock out someone
  * whose device/session they've gained temporary access to.

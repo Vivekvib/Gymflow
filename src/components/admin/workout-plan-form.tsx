@@ -144,7 +144,7 @@ function WorkoutDayFields({ control, register, dayIndex, onRemoveDay, errors }: 
         ) : null}
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <Label htmlFor={`days.${dayIndex}.dayOfWeek`}>Day of week</Label>
             <Select id={`days.${dayIndex}.dayOfWeek`} {...register(`days.${dayIndex}.dayOfWeek`)}>
@@ -172,16 +172,16 @@ function WorkoutDayFields({ control, register, dayIndex, onRemoveDay, errors }: 
           {exerciseFields.map((exerciseField, exerciseIndex) => (
             <div
               key={exerciseField.id}
-              className="grid grid-cols-12 items-end gap-2 rounded-[var(--radius-control)] border border-[var(--color-line)] p-3"
+              className="grid grid-cols-2 items-end gap-2 rounded-[var(--radius-control)] border border-[var(--color-line)] p-3 sm:grid-cols-12"
             >
-              <div className="col-span-4">
+              <div className="col-span-2 sm:col-span-4">
                 <Label htmlFor={`days.${dayIndex}.exercises.${exerciseIndex}.name`}>Exercise</Label>
                 <Input
                   id={`days.${dayIndex}.exercises.${exerciseIndex}.name`}
                   {...register(`days.${dayIndex}.exercises.${exerciseIndex}.name`)}
                 />
               </div>
-              <div className="col-span-2">
+              <div className="col-span-1 sm:col-span-2">
                 <Label htmlFor={`days.${dayIndex}.exercises.${exerciseIndex}.sets`}>Sets</Label>
                 <Input
                   id={`days.${dayIndex}.exercises.${exerciseIndex}.sets`}
@@ -189,7 +189,7 @@ function WorkoutDayFields({ control, register, dayIndex, onRemoveDay, errors }: 
                   {...register(`days.${dayIndex}.exercises.${exerciseIndex}.sets`)}
                 />
               </div>
-              <div className="col-span-2">
+              <div className="col-span-1 sm:col-span-2">
                 <Label htmlFor={`days.${dayIndex}.exercises.${exerciseIndex}.reps`}>Reps</Label>
                 <Input
                   id={`days.${dayIndex}.exercises.${exerciseIndex}.reps`}
@@ -197,7 +197,7 @@ function WorkoutDayFields({ control, register, dayIndex, onRemoveDay, errors }: 
                   {...register(`days.${dayIndex}.exercises.${exerciseIndex}.reps`)}
                 />
               </div>
-              <div className="col-span-2">
+              <div className="col-span-1 sm:col-span-2">
                 <Label htmlFor={`days.${dayIndex}.exercises.${exerciseIndex}.restSeconds`}>
                   Rest (s)
                 </Label>
@@ -207,7 +207,7 @@ function WorkoutDayFields({ control, register, dayIndex, onRemoveDay, errors }: 
                   {...register(`days.${dayIndex}.exercises.${exerciseIndex}.restSeconds`)}
                 />
               </div>
-              <div className="col-span-2">
+              <div className="col-span-1 sm:col-span-2">
                 <Button
                   type="button"
                   variant="ghost"

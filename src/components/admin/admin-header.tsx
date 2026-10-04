@@ -7,7 +7,7 @@ interface AdminHeaderProps {
 
 export function AdminHeader({ adminName }: AdminHeaderProps) {
   return (
-    <header className="flex items-center justify-between border-b border-[var(--color-line)] bg-[var(--color-surface)] px-6 py-3">
+    <header className="flex items-center justify-between border-b border-[var(--color-line)] bg-[var(--color-surface)] px-4 py-3 sm:px-6">
       <p className="text-sm text-[var(--color-ink-muted)]">
         Signed in as <span className="font-medium text-[var(--color-ink)]">{adminName}</span>
       </p>

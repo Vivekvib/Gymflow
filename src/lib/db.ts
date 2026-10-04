@@ -1,32 +1,35 @@
-import { Pool } from "pg";
-import { PrismaPg } from "@prisma/adapter-pg";
+import { neonConfig } from "@neondatabase/serverless";
+import { PrismaNeon } from "@prisma/adapter-neon";
+import ws from "ws";
 import { PrismaClient } from "@/generated/prisma/client";
 import { env } from "@/lib/env";
 
 /**
- * Prisma ORM v7 dropped the built-in Rust query engine in favor of driver
- * adapters, so a PrismaClient now needs an explicit pg Pool + PrismaPg
- * adapter rather than just a connection string.
+ * Uses Neon's own driver (WebSocket-based) rather than a traditional `pg`
+ * TCP pool - this matters specifically because the app deploys to Vercel's
+ * serverless functions. A `pg.Pool` opens a brand new TCP+TLS connection on
+ * every cold invocation (each one is its own isolated process with no
+ * memory of a previous connection); stacked on top of Neon's free-tier
+ * compute waking from idle, that combination can exceed even a generous
+ * `$transaction` timeout (see DB_TRANSACTION_OPTIONS in
+ * config/constants.ts) and surface as Prisma error P2028. This is
+ * Prisma's own documented recommendation for deploying to Vercel with
+ * Neon - see README's Prisma 7 / Neon notes for the full story, including
+ * what to revert to if this app ever moves off Neon.
  *
- * The globalThis cache exists purely for Next.js dev mode: every hot reload
- * re-evaluates this module, and without caching, each reload would open a
- * fresh pool without closing the last one and exhaust Postgres connections.
- * In production there's exactly one module evaluation, so the cache is a
- * no-op there.
+ * PrismaNeon (unlike @prisma/adapter-pg's PrismaPg) takes a plain config
+ * object, not a pre-built Pool - it manages pooling internally.
+ *
+ * neonConfig.webSocketConstructor is only required below Node 22 - this
+ * repo targets Node 24, so it's a no-op safety net here, not a requirement.
  */
+neonConfig.webSocketConstructor = ws;
+
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
-  pgPool: Pool | undefined;
 };
 
-const pool =
-  globalForPrisma.pgPool ??
-  new Pool({
-    connectionString: env.DATABASE_URL,
-    max: env.NODE_ENV === "production" ? 20 : 5,
-  });
-
-const adapter = new PrismaPg(pool);
+const adapter = new PrismaNeon({ connectionString: env.DATABASE_URL });
 
 export const db =
   globalForPrisma.prisma ??
@@ -37,5 +40,4 @@ export const db =
 
 if (env.NODE_ENV !== "production") {
   globalForPrisma.prisma = db;
-  globalForPrisma.pgPool = pool;
 }

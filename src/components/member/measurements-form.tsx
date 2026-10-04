@@ -44,7 +44,7 @@ export function MeasurementsForm() {
         Leave any measurement blank if you didn&apos;t take it this time.
       </p>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
           <Label htmlFor="waistCm">Waist (cm)</Label>
           <Input id="waistCm" type="number" step="0.1" {...register("waistCm")} />

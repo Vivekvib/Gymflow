@@ -88,7 +88,7 @@ export function PaymentForm({ preselectedMember, memberOptions = [] }: PaymentFo
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
           <Label htmlFor="amountRupees">Amount (INR)</Label>
           <Input id="amountRupees" type="number" step="1" {...register("amountRupees")} />

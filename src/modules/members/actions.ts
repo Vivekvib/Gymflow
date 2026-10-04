@@ -6,6 +6,7 @@ import { requireAdminSession, requireMemberSession } from "@/modules/auth/guards
 import { actionError, actionSuccess, type ActionResult } from "@/lib/action-result";
 import { NotFoundError } from "@/lib/errors";
 import {
+  adminResetMemberPassword,
   changeMemberPassword,
   createMember,
   setMemberActive,
@@ -13,9 +14,11 @@ import {
   updateOwnProfile,
 } from "@/modules/members/service";
 import {
+  adminResetPasswordSchema,
   changePasswordSchema,
   createMemberSchema,
   updateMemberSchema,
+  type AdminResetPasswordInput,
   type ChangePasswordInput,
   type CreateMemberInput,
   type UpdateMemberInput,
@@ -125,6 +128,27 @@ export async function changeMemberPasswordAction(
   } catch (error) {
     if (error instanceof NotFoundError) return actionError("Profile not found.");
     return actionError(error instanceof Error ? error.message : "Failed to change password");
+  }
+
+  return actionSuccess();
+}
+
+export async function adminResetMemberPasswordAction(
+  memberId: string,
+  input: AdminResetPasswordInput,
+): Promise<ActionResult<never>> {
+  const session = await requireAdminSession();
+
+  const parsed = adminResetPasswordSchema.safeParse(input);
+  if (!parsed.success) {
+    return actionError(parsed.error.issues[0]?.message ?? "Invalid input");
+  }
+
+  try {
+    await adminResetMemberPassword(session.gymId, memberId, parsed.data.newPassword, session.adminId);
+  } catch (error) {
+    if (error instanceof NotFoundError) return actionError("Member not found.");
+    return actionError(error instanceof Error ? error.message : "Failed to reset password");
   }
 
   return actionSuccess();

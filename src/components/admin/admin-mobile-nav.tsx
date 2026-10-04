@@ -2,16 +2,23 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { memberNavItems } from "@/config/navigation";
+import { adminNavItems } from "@/config/navigation";
 import { cn } from "@/lib/utils";
 
-export function MemberNav() {
+/**
+ * The desktop sidebar (admin-sidebar.tsx) is hidden below the md
+ * breakpoint, so without this an admin on a phone had no navigation at
+ * all. Same items, same active-state logic, laid out as a scrollable tab
+ * bar instead.
+ */
+export function AdminMobileNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="flex gap-1 overflow-x-auto border-b border-[var(--color-line)] bg-[var(--color-surface)] px-4 sm:px-6">
-      {memberNavItems.map((item) => {
-        const isActive = item.href === "/member" ? pathname === "/member" : pathname.startsWith(item.href);
+    <nav className="flex gap-1 overflow-x-auto border-b border-[var(--color-line)] bg-[var(--color-surface)] px-4 md:hidden">
+      {adminNavItems.map((item) => {
+        const isActive =
+          item.href === "/admin" ? pathname === "/admin" : pathname.startsWith(item.href);
         return (
           <Link
             key={item.href}
