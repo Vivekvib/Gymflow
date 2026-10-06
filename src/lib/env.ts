@@ -7,7 +7,12 @@ import { z } from "zod";
  */
 const envSchema = z.object({
   DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
-  DIRECT_URL: z.string().min(1).optional(),
+  // Required, not optional: prisma.config.ts reads this directly for
+  // every CLI command (migrate, studio, db pull) - see the comment there.
+  // Validating it here too means a missing value fails the app's own
+  // boot immediately rather than only surfacing the next time someone
+  // happens to run a migration.
+  DIRECT_URL: z.string().min(1, "DIRECT_URL is required"),
   SESSION_SECRET: z
     .string()
     .min(32, "SESSION_SECRET must be at least 32 characters - generate one with `openssl rand -base64 48`"),
