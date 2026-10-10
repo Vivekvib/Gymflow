@@ -28,6 +28,10 @@ and **Member**.
   exercises, added/removed dynamically); the member sees a read-only view.
   Editing always replaces the plan wholesale (no per-day diffing) - simple
   and correct for a form that submits the whole plan each time.
+  Exercises are **picked, not typed**: choose a muscle group, then choose
+  from only that group's exercises (570 in total, from the gym's own
+  spreadsheet). Members see each exercise with a "Watch video" link where a
+  demonstration exists. See [Exercise catalog](#exercise-catalog).
 - **Settings** - admin can edit the gym's name/phone/email/address/city,
   stored in the database (not env vars) - the admin sidebar and member
   header both reflect the current name live after a save.
@@ -288,6 +292,36 @@ looks unfamiliar coming from Prisma 5/6 examples online:
   `scripts/reset-admin-password.ts` - the Neon driver only works against
   Neon's own infrastructure (or anything speaking its wire protocol, like
   Xata).
+
+## Exercise catalog
+
+The 570-exercise library behind the plan editor lives in
+`src/modules/workouts/exercise-catalog.ts` (data) and
+`exercise-library.ts` (lookups). It is a static file, not a database table:
+it is reference content that doesn't vary per gym and nobody edits day to
+day, and keeping it in code means no migration and no extra query when the
+dropdowns open.
+
+- A plan stores only the exercise **name** (no schema change). Names are
+  unique across the whole catalog, so the muscle group and video link are
+  always derivable from the name. `tests/unit/exercise-library.test.ts`
+  enforces that, plus: only real `http(s)` video links, and no blank names.
+- The member workout page is a Server Component, so it looks up video links
+  on the server and the catalog is never sent to a member's phone. Only the
+  admin plan editor bundles it.
+- Exercises already saved under a name that isn't in the catalog (typed by
+  hand before this feature existed) are kept and shown as "(custom)" in the
+  editor rather than being blanked, and simply have no video link.
+- The source spreadsheet only labeled the first row of each block and had
+  several mis-grouped blocks, so the muscle groups here are **not** its raw
+  labels. The header of `exercise-catalog.ts` lists every correction. In
+  short: its "Quads" section was really Quads + Hamstrings + Calves; "Upper
+  Traps" was really Traps + Rear Delts; and a ~50 row unsorted tail was
+  re-assigned one exercise at a time.
+- To change the library, edit `exercise-catalog.ts` directly (keep names
+  unique - the test will tell you if you don't). Renaming an exercise that
+  is already in a saved plan turns it into a "(custom)" entry there, so
+  prefer adding over renaming.
 
 ## What's next
 

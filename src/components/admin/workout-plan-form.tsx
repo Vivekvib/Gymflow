@@ -2,7 +2,15 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { useFieldArray, useForm, type Control, type FieldErrors, type UseFormRegister } from "react-hook-form";
+import {
+  useFieldArray,
+  useForm,
+  useWatch,
+  type Control,
+  type FieldErrors,
+  type UseFormRegister,
+  type UseFormSetValue,
+} from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -18,6 +26,14 @@ import {
   workoutPlanSchema,
   type WorkoutPlanInput,
 } from "@/modules/workouts/validation";
+import {
+  MUSCLE_GROUPS,
+  findCatalogExerciseByName,
+  findExerciseVideoUrl,
+  getExercisesForGroup,
+  isMuscleGroup,
+  type MuscleGroup,
+} from "@/modules/workouts/exercise-library";
 import { upsertWorkoutPlanAction } from "@/modules/workouts/actions";
 
 interface WorkoutPlanFormProps {
@@ -33,6 +49,7 @@ export function WorkoutPlanForm({ memberId, defaultValues }: WorkoutPlanFormProp
   const {
     register,
     control,
+    setValue,
     handleSubmit,
     formState: { errors },
   } = useForm<WorkoutPlanInput>({
@@ -87,6 +104,7 @@ export function WorkoutPlanForm({ memberId, defaultValues }: WorkoutPlanFormProp
             key={dayField.id}
             control={control}
             register={register}
+            setValue={setValue}
             dayIndex={dayIndex}
             onRemoveDay={dayFields.length > 1 ? () => removeDay(dayIndex) : undefined}
             errors={errors}
@@ -112,6 +130,7 @@ export function WorkoutPlanForm({ memberId, defaultValues }: WorkoutPlanFormProp
 interface WorkoutDayFieldsProps {
   control: Control<WorkoutPlanInput>;
   register: UseFormRegister<WorkoutPlanInput>;
+  setValue: UseFormSetValue<WorkoutPlanInput>;
   dayIndex: number;
   onRemoveDay?: () => void;
   errors: FieldErrors<WorkoutPlanInput>;
@@ -124,7 +143,14 @@ interface WorkoutDayFieldsProps {
  * row gets a child component that manages its own nested array off the
  * same shared `control`.
  */
-function WorkoutDayFields({ control, register, dayIndex, onRemoveDay, errors }: WorkoutDayFieldsProps) {
+function WorkoutDayFields({
+  control,
+  register,
+  setValue,
+  dayIndex,
+  onRemoveDay,
+  errors,
+}: WorkoutDayFieldsProps) {
   const {
     fields: exerciseFields,
     append: appendExercise,
@@ -170,56 +196,17 @@ function WorkoutDayFields({ control, register, dayIndex, onRemoveDay, errors }: 
 
         <div className="space-y-3">
           {exerciseFields.map((exerciseField, exerciseIndex) => (
-            <div
+            <ExerciseRowFields
               key={exerciseField.id}
-              className="grid grid-cols-2 items-end gap-2 rounded-[var(--radius-control)] border border-[var(--color-line)] p-3 sm:grid-cols-12"
-            >
-              <div className="col-span-2 sm:col-span-4">
-                <Label htmlFor={`days.${dayIndex}.exercises.${exerciseIndex}.name`}>Exercise</Label>
-                <Input
-                  id={`days.${dayIndex}.exercises.${exerciseIndex}.name`}
-                  {...register(`days.${dayIndex}.exercises.${exerciseIndex}.name`)}
-                />
-              </div>
-              <div className="col-span-1 sm:col-span-2">
-                <Label htmlFor={`days.${dayIndex}.exercises.${exerciseIndex}.sets`}>Sets</Label>
-                <Input
-                  id={`days.${dayIndex}.exercises.${exerciseIndex}.sets`}
-                  type="number"
-                  {...register(`days.${dayIndex}.exercises.${exerciseIndex}.sets`)}
-                />
-              </div>
-              <div className="col-span-1 sm:col-span-2">
-                <Label htmlFor={`days.${dayIndex}.exercises.${exerciseIndex}.reps`}>Reps</Label>
-                <Input
-                  id={`days.${dayIndex}.exercises.${exerciseIndex}.reps`}
-                  placeholder="8-10"
-                  {...register(`days.${dayIndex}.exercises.${exerciseIndex}.reps`)}
-                />
-              </div>
-              <div className="col-span-1 sm:col-span-2">
-                <Label htmlFor={`days.${dayIndex}.exercises.${exerciseIndex}.restSeconds`}>
-                  Rest (s)
-                </Label>
-                <Input
-                  id={`days.${dayIndex}.exercises.${exerciseIndex}.restSeconds`}
-                  type="number"
-                  {...register(`days.${dayIndex}.exercises.${exerciseIndex}.restSeconds`)}
-                />
-              </div>
-              <div className="col-span-1 sm:col-span-2">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  disabled={exerciseFields.length <= 1}
-                  onClick={() => removeExercise(exerciseIndex)}
-                  aria-label="Remove exercise"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
+              control={control}
+              register={register}
+              setValue={setValue}
+              dayIndex={dayIndex}
+              exerciseIndex={exerciseIndex}
+              canRemove={exerciseFields.length > 1}
+              onRemove={() => removeExercise(exerciseIndex)}
+              errors={errors}
+            />
           ))}
           {dayErrors?.exercises?.message ? (
             <p className="text-xs text-[var(--color-danger)]">{dayErrors.exercises.message}</p>
@@ -236,5 +223,145 @@ function WorkoutDayFields({ control, register, dayIndex, onRemoveDay, errors }: 
         </Button>
       </CardContent>
     </Card>
+  );
+}
+
+interface ExerciseRowFieldsProps {
+  control: Control<WorkoutPlanInput>;
+  register: UseFormRegister<WorkoutPlanInput>;
+  setValue: UseFormSetValue<WorkoutPlanInput>;
+  dayIndex: number;
+  exerciseIndex: number;
+  canRemove: boolean;
+  onRemove: () => void;
+  errors: FieldErrors<WorkoutPlanInput>;
+}
+
+/**
+ * One exercise: pick a muscle group, then pick from only that group's
+ * exercises. The muscle group is purely a UI filter held in local state -
+ * it is not part of the form data and is never saved (PlanExercise stores
+ * just the exercise name, which is unique across the whole catalog, so the
+ * group can always be derived back from it).
+ */
+function ExerciseRowFields({
+  control,
+  register,
+  setValue,
+  dayIndex,
+  exerciseIndex,
+  canRemove,
+  onRemove,
+  errors,
+}: ExerciseRowFieldsProps) {
+  const fieldPath = `days.${dayIndex}.exercises.${exerciseIndex}` as const;
+  const namePath = `${fieldPath}.name` as const;
+
+  const currentName = useWatch({ control, name: namePath }) ?? "";
+
+  // When editing a saved plan, start on the group the saved exercise belongs
+  // to; for a brand new row, start on the first group.
+  const [muscleGroup, setMuscleGroup] = React.useState<MuscleGroup>(
+    () => findCatalogExerciseByName(currentName)?.muscleGroup ?? MUSCLE_GROUPS[0],
+  );
+
+  const options = getExercisesForGroup(muscleGroup);
+
+  // A name that isn't in the catalog (e.g. typed by hand before this feature
+  // existed) is kept and shown honestly, rather than silently blanked.
+  const isCustomName = currentName !== "" && !findCatalogExerciseByName(currentName);
+
+  const videoUrl = findExerciseVideoUrl(currentName);
+  const rowErrors = errors.days?.[dayIndex]?.exercises?.[exerciseIndex];
+
+  function handleGroupChange(event: React.ChangeEvent<HTMLSelectElement>) {
+    const next = event.target.value;
+    if (!isMuscleGroup(next)) return;
+    setMuscleGroup(next);
+    // The previously chosen exercise belongs to the old group and would no
+    // longer be among the options - clear it so a stale, invisible value
+    // can't be submitted.
+    setValue(namePath, "", { shouldDirty: true });
+  }
+
+  return (
+    <div className="grid grid-cols-2 items-start gap-2 rounded-[var(--radius-control)] border border-[var(--color-line)] p-3 sm:grid-cols-12">
+      <div className="col-span-2 sm:col-span-4">
+        <Label htmlFor={`${fieldPath}.muscleGroup`}>Muscle group</Label>
+        <Select
+          id={`${fieldPath}.muscleGroup`}
+          value={muscleGroup}
+          onChange={handleGroupChange}
+        >
+          {MUSCLE_GROUPS.map((group) => (
+            <option key={group} value={group}>
+              {group}
+            </option>
+          ))}
+        </Select>
+      </div>
+
+      <div className="col-span-2 sm:col-span-8">
+        <Label htmlFor={namePath}>Exercise</Label>
+        <Select id={namePath} {...register(namePath)}>
+          <option value="">Select an exercise</option>
+          {isCustomName ? <option value={currentName}>{currentName} (custom)</option> : null}
+          {options.map((exercise) => (
+            <option key={exercise.id} value={exercise.name}>
+              {exercise.name}
+            </option>
+          ))}
+        </Select>
+        {rowErrors?.name ? (
+          <p className="mt-1 text-xs text-[var(--color-danger)]">{rowErrors.name.message}</p>
+        ) : null}
+        {videoUrl ? (
+          <a
+            href={videoUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-1 inline-block text-xs font-medium text-[var(--color-accent)] hover:underline"
+          >
+            Watch demo video
+          </a>
+        ) : null}
+      </div>
+
+      <div className="col-span-1 sm:col-span-3">
+        <Label htmlFor={`${fieldPath}.sets`}>Sets</Label>
+        <Input id={`${fieldPath}.sets`} type="number" {...register(`${fieldPath}.sets`)} />
+        {rowErrors?.sets ? (
+          <p className="mt-1 text-xs text-[var(--color-danger)]">{rowErrors.sets.message}</p>
+        ) : null}
+      </div>
+      <div className="col-span-1 sm:col-span-3">
+        <Label htmlFor={`${fieldPath}.reps`}>Reps</Label>
+        <Input id={`${fieldPath}.reps`} placeholder="8-10" {...register(`${fieldPath}.reps`)} />
+        {rowErrors?.reps ? (
+          <p className="mt-1 text-xs text-[var(--color-danger)]">{rowErrors.reps.message}</p>
+        ) : null}
+      </div>
+      <div className="col-span-1 sm:col-span-3">
+        <Label htmlFor={`${fieldPath}.restSeconds`}>Rest (s)</Label>
+        <Input
+          id={`${fieldPath}.restSeconds`}
+          type="number"
+          {...register(`${fieldPath}.restSeconds`)}
+        />
+      </div>
+      <div className="col-span-1 flex sm:col-span-3 sm:justify-end sm:self-end">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          disabled={!canRemove}
+          onClick={onRemove}
+          aria-label="Remove exercise"
+          className="mt-6 sm:mt-0"
+        >
+          <Trash2 className="h-4 w-4" /> Remove
+        </Button>
+      </div>
+    </div>
   );
 }

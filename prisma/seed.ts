@@ -180,9 +180,9 @@ async function main() {
               order: 0,
               exercises: {
                 create: [
-                  { name: "Squat", sets: 3, reps: "8-10", restSeconds: 90, order: 0 },
+                  { name: "Goblet Squat", sets: 3, reps: "8-10", restSeconds: 90, order: 0 },
                   { name: "Bench Press", sets: 3, reps: "8-10", restSeconds: 90, order: 1 },
-                  { name: "Bent-over Row", sets: 3, reps: "10-12", restSeconds: 60, order: 2 },
+                  { name: "Barbell Bent Over Row", sets: 3, reps: "10-12", restSeconds: 60, order: 2 },
                 ],
               },
             },
@@ -192,9 +192,9 @@ async function main() {
               order: 1,
               exercises: {
                 create: [
-                  { name: "Deadlift", sets: 3, reps: "5-6", restSeconds: 120, order: 0 },
-                  { name: "Overhead Press", sets: 3, reps: "8-10", restSeconds: 90, order: 1 },
-                  { name: "Lat Pulldown", sets: 3, reps: "10-12", restSeconds: 60, order: 2 },
+                  { name: "DB Romanian Deadlift", sets: 3, reps: "5-6", restSeconds: 120, order: 0 },
+                  { name: "Seated DB Overhead Press", sets: 3, reps: "8-10", restSeconds: 90, order: 1 },
+                  { name: "Close Neutral Grip Lat Pulldown", sets: 3, reps: "10-12", restSeconds: 60, order: 2 },
                 ],
               },
             },

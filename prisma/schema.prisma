@@ -299,7 +299,7 @@ model WorkoutCompletion {
   memberId         String
   member           Member         @relation(fields: [memberId], references: [id])
   workoutPlanDayId String
-  workoutPlanDay   WorkoutPlanDay @relation(fields: [workoutPlanDayId], references: [id])
+  workoutPlanDay   WorkoutPlanDay @relation(fields: [workoutPlanDayId], references: [id],onDelete: Cascade)
 
   completedDate DateTime @default(now())
   notes         String?
