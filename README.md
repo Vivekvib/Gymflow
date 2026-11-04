@@ -40,20 +40,15 @@ and **Member**.
   session alone isn't enough to silently take over the account). Admins
   reset their own password separately via `pnpm admin:reset-password` -
   there's no UI for that yet (see [Scripts](#scripts)).
-- **Public landing page** - hero, facilities, membership plan durations
-  (reused from the same constant the admin payment form uses, so it can't
-  drift out of sync), a "why train here" section, and contact details read
-  live from the Gym row. Two intentional departures from the original
-  spec: no fabricated testimonials (inventing quotes from fake customers
-  isn't something to ship on a real site), and no specific membership
-  prices shown (nothing in the schema stores official pricing - an admin
-  enters the amount by hand per payment - so a specific number here could
-  drift from what's actually charged). Also has an FAQ page and a privacy
-  policy page (the latter is a factually accurate starting draft, not
-  legal advice - see the disclaimer on the page itself) and a mobile-first
-  layout pass across the whole app, not just the landing page (admin now
-  has a phone nav bar; every multi-column form drops to one column below
-  the `sm` breakpoint).
+- **Black theme everywhere** - the public site, sign-in pages, and the admin
+  and member dashboards share one dark theme with a lime accent. The public
+  site is built from the owner's reference screenshots: full-bleed hero, About, Training, "How
+  joining works", Membership plans, Contact, closing banner, and footer,
+  plus the FAQ, privacy policy, and sign-in pages in the same style. All
+  wording, photos, and prices live in one file, `src/config/marketing.ts`
+  (see [Editing the public website](#editing-the-public-website)). Mobile
+  layout covers the whole app (admin has a phone nav bar; multi-column
+  forms drop to one column below `sm`).
 - **Admin can reset a locked-out member's password** directly from the
   member detail page - previously the only password-reset path
   (`pnpm admin:reset-password`) only touched the Admin table, so a member
@@ -192,7 +187,7 @@ src/
 │
 ├── components/
 │   ├── ui/               # button, input, label, textarea, select, card, badge, table
-│   ├── marketing/        # navbar, hero, facilities, membership-plans, why-us, contact, footer
+│   ├── marketing/        # navbar, hero, about, services, join-steps, membership-plans, contact, cta-banner, footer, auth-shell
 │   ├── admin/, member/, shared/
 │
 ├── lib/                  # db, env, dates, currency, rate-limit, audit, errors, action-result, utils
@@ -292,6 +287,51 @@ looks unfamiliar coming from Prisma 5/6 examples online:
   `scripts/reset-admin-password.ts` - the Neon driver only works against
   Neon's own infrastructure (or anything speaking its wire protocol, like
   Xata).
+
+## Editing the public website
+
+Everything an owner is likely to change is in **`src/config/marketing.ts`**,
+so no component needs touching:
+
+- **Photos.** Every photo slot starts as `null` and falls back to a dark
+  patterned background, so the site looks finished without photography. To
+  use a real photo, put the file in `public/images/` and set its path, e.g.
+  `hero: "/images/hero.jpg"`. Sizes and tips: `public/images/README.md`.
+  Photos get a dark overlay automatically so white text stays readable.
+  There is deliberately no stock or AI-generated photography in the app.
+- **Prices.** `MEMBERSHIP_PRICES_INR` is empty on purpose: nothing in the
+  system stores official prices (an admin types the amount per payment), so
+  any number shown would be a guess. Add only what is true, e.g.
+  `{ 30: 1500, 90: 4000 }` (keys are plan lengths in days). A plan with no
+  price shows "Ask at the front desk". `tests/unit/plan-pricing.test.ts`
+  fails if a key isn't a length the payment form can record.
+- **Wording.** Hero, About, Training, joining steps, plan features, and the
+  closing banner. Two Training items (strength, cardio) are generic
+  assumptions about the gym's equipment and are marked `ASSUMPTION` - edit
+  them to match reality.
+- **What is intentionally not there.** The reference design has member
+  counts, a "years of experience" figure, a star rating, a named customer
+  testimonial, sample prices, blog posts, and a newsletter form. None of
+  those are real for this gym, so none are shown; "How joining works" takes
+  the testimonial's place. Add them back only with real content.
+
+**Theme.** Every page (public site, sign-in, admin, member) uses one black
+theme with a lime accent. It is defined once, as CSS variables in the
+`@theme` block of `src/app/globals.css`, and every component reads those
+variables instead of hard-coding colors - so changing the look means
+editing that one block. Notes for anyone touching it:
+
+- Two tokens do jobs a single "background" color can't: `--color-subtle` (a
+  translucent white used for hover, table headers, and badges, so it works
+  on both the page and on cards) and `--color-line-strong` (borders of form
+  fields, chosen to be at least 3:1 against the page and cards).
+- Contrast was checked numerically: all text pairs clear WCAG AA (body text
+  about 16:1, muted text about 7:1). Re-check if you change a color.
+- The one place the palette is repeated by hand is `CHART_COLORS` in
+  `components/member/weight-chart.tsx`, because Recharts needs literal
+  values, not CSS variables.
+- Browser autofill is restyled in `globals.css` (it otherwise paints fields
+  pale blue on a dark page).
 
 ## Exercise catalog
 

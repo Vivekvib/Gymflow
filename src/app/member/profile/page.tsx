@@ -25,7 +25,8 @@ export default async function MemberProfilePage() {
         description={`Member ID ${member.memberCode} - joined ${formatDate(member.joinDate)}`}
       />
 
-      <Card>
+      <div className="grid items-start gap-6 lg:grid-cols-3">
+      <Card className="lg:col-span-2">
         <CardHeader>
           <CardTitle>Your details</CardTitle>
         </CardHeader>
@@ -53,6 +54,7 @@ export default async function MemberProfilePage() {
           <ChangePasswordForm />
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }

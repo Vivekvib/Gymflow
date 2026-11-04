@@ -76,7 +76,7 @@ export function ProgressSummary({ summary }: { summary: ProgressSummaryData }) {
             <CardTitle>Goal progress</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-2 w-full overflow-hidden rounded-full bg-[var(--color-paper)]">
+            <div className="h-2 w-full overflow-hidden rounded-full bg-[var(--color-subtle)]">
               <div
                 className="h-full rounded-full bg-[var(--color-accent)]"
                 style={{ width: `${progressPercent}%` }}

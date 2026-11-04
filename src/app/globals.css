@@ -1,44 +1,77 @@
 @import "tailwindcss";
 
 /*
- * Design tokens for GymFlow's admin/member dashboards.
+ * Design tokens for the whole app: public site, sign-in, and the admin and
+ * member dashboards all share one black theme with a lime accent. Every
+ * component reads these variables rather than hard-coding colors, so this
+ * block is the single place the look is defined.
  *
- * This is a data-dense operational tool, not a marketing page - the goal
- * is legibility and clear hierarchy, not a "wow" moment. Cards use a
- * 1px border rather than a soft drop-shadow (the "SaaS-card kit" default),
- * and the single accent color (a flame orange, distinct from Anthropic's
- * own terracotta) is reserved for primary actions and status - it does not
- * decorate headings or backgrounds.
+ * Cards use a 1px border rather than a soft drop-shadow, and the accent is
+ * reserved for primary actions, active states, and key figures - it does
+ * not decorate large backgrounds.
+ *
+ * Which token for what:
+ *   paper        the page itself, and recessed form fields (darkest)
+ *   surface      cards, headers, sidebar (one step lighter than the page)
+ *   subtle       a faint highlight over either of the above: table headers,
+ *                row/button hover, neutral badges, progress tracks. A
+ *                translucent white, so it works on paper AND on surface -
+ *                a solid color would vanish on one of them.
+ *   line         dividers and card borders
+ *   line-strong  borders of interactive controls. Chosen to be at least 3:1
+ *                against both paper and surface, so a field's edge is visible.
  */
 @theme {
-  --color-ink: #1b1f23;
-  --color-ink-muted: #565d66;
-  --color-paper: #f7f5f2;
-  --color-surface: #ffffff;
-  --color-line: #e4e1db;
+  --color-ink: #f4f4ef;
+  --color-ink-muted: #a3a3a0;
+  --color-paper: #0c0c0c;
+  --color-surface: #161616;
+  --color-subtle: rgba(255, 255, 255, 0.06);
+  --color-line: #2b2b2b;
+  --color-line-strong: #6b6b66;
 
-  --color-accent: #e2571c;
-  --color-accent-ink: #ffffff;
+  --color-accent: #d4ff00;
+  --color-accent-ink: #0c0c0c;
 
-  --color-success: #1f7a4d;
-  --color-success-bg: #e8f4ee;
-  --color-warn: #a3600a;
-  --color-warn-bg: #fbf0dd;
-  --color-danger: #c22f2f;
-  --color-danger-bg: #fbe9e9;
+  --color-success: #7ee2a8;
+  --color-success-bg: rgba(126, 226, 168, 0.12);
+  --color-warn: #f5c451;
+  --color-warn-bg: rgba(245, 196, 81, 0.12);
+  --color-danger: #ff8080;
+  --color-danger-bg: rgba(255, 128, 128, 0.12);
 
-  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-sans: var(--font-body-loaded), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: var(--font-display-loaded), "Arial Narrow", ui-sans-serif, system-ui, sans-serif;
   --radius-control: 0.375rem;
 }
 
 html {
-  color-scheme: light;
+  /* Makes native controls dark too: dropdown lists, date pickers, scrollbars. */
+  color-scheme: dark;
+  /* Covers the overscroll area so a bounce never flashes white. */
+  background-color: var(--color-paper);
 }
 
 body {
   background-color: var(--color-paper);
   color: var(--color-ink);
   font-family: var(--font-sans);
+}
+
+/*
+ * Browsers paint autofilled fields a pale blue/white that clashes badly with
+ * a dark UI (and makes the text hard to read). Painting a huge inset shadow
+ * in our own color is the standard way to override it.
+ */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+select:-webkit-autofill {
+  -webkit-text-fill-color: var(--color-ink);
+  caret-color: var(--color-ink);
+  box-shadow: 0 0 0 1000px var(--color-paper) inset;
+  transition: background-color 9999s ease-out 0s;
 }
 
 /* Keyboard focus must stay visible everywhere - never suppressed for looks. */

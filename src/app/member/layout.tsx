@@ -16,7 +16,7 @@ export default async function MemberLayout({ children }: { children: React.React
     <div className="min-h-screen">
       <MemberHeader gymName={gym?.name ?? "GymFlow"} memberName={member?.name ?? "Member"} />
       <MemberNav />
-      <main className="mx-auto max-w-3xl p-4 sm:p-6">{children}</main>
+      <main className="mx-auto w-full max-w-[1400px] p-4 sm:p-6 lg:p-10">{children}</main>
     </div>
   );
 }

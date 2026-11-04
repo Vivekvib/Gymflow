@@ -1,25 +1,23 @@
-import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AuthShell } from "@/components/marketing/auth-shell";
 import { AdminLoginForm } from "@/components/admin/admin-login-form";
+import { getPublicGymName } from "@/modules/gym/service";
 import { siteConfig } from "@/config/site";
 
-export default function AdminLoginPage() {
+export default async function AdminLoginPage() {
+  const gymName = await getPublicGymName(siteConfig.name);
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[var(--color-paper)] px-4">
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle className="text-base">{siteConfig.name} - Admin sign in</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <AdminLoginForm />
-          <p className="mt-4 text-center text-xs text-[var(--color-ink-muted)]">
-            Member instead?{" "}
-            <Link href="/member/login" className="font-medium text-[var(--color-accent)] hover:underline">
-              Go to member sign in
-            </Link>
-          </p>
-        </CardContent>
-      </Card>
-    </div>
+    <AuthShell
+      gymName={gymName}
+      title="Staff sign in"
+      subtitle="For gym staff and owners."
+      alternate={{
+        text: "Member instead?",
+        label: "Go to member sign in",
+        href: "/member/login",
+      }}
+    >
+      <AdminLoginForm />
+    </AuthShell>
   );
 }

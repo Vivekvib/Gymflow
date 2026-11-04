@@ -23,57 +23,59 @@ export default async function MemberDashboardPage() {
   const status = getMemberStatus(member);
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader className="flex items-center justify-between">
-          <CardTitle>Membership status</CardTitle>
-          <Badge tone={MEMBER_STATUS_TONE[status]}>{MEMBER_STATUS_LABEL[status]}</Badge>
-        </CardHeader>
-        <CardContent className="text-sm">
-          <p className="text-[var(--color-ink-muted)]">
-            Member ID <span className="font-medium text-[var(--color-ink)]">{member.memberCode}</span>
-          </p>
-          <p className="mt-1 text-[var(--color-ink-muted)]">
-            {member.membershipEnd ? (
-              <>
-                Valid till{" "}
-                <span className="font-medium text-[var(--color-ink)]">
-                  {formatDate(member.membershipEnd)}
-                </span>
-              </>
-            ) : (
-              "No active membership yet - see the front desk to make your first payment."
-            )}
-          </p>
-        </CardContent>
-      </Card>
+    <div className="grid items-start gap-6 lg:grid-cols-3">
+      <div className="space-y-6">
+        <Card>
+          <CardHeader className="flex items-center justify-between">
+            <CardTitle>Membership status</CardTitle>
+            <Badge tone={MEMBER_STATUS_TONE[status]}>{MEMBER_STATUS_LABEL[status]}</Badge>
+          </CardHeader>
+          <CardContent className="text-sm">
+            <p className="text-[var(--color-ink-muted)]">
+              Member ID <span className="font-medium text-[var(--color-ink)]">{member.memberCode}</span>
+            </p>
+            <p className="mt-1 text-[var(--color-ink-muted)]">
+              {member.membershipEnd ? (
+                <>
+                  Valid till{" "}
+                  <span className="font-medium text-[var(--color-ink)]">
+                    {formatDate(member.membershipEnd)}
+                  </span>
+                </>
+              ) : (
+                "No active membership yet - see the front desk to make your first payment."
+              )}
+            </p>
+          </CardContent>
+        </Card>
 
-      <Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Quick links</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3 text-sm">
+            <Link href="/member/progress" className="font-medium text-[var(--color-accent)] hover:underline">
+              Log weight &amp; track your goal
+            </Link>
+            <Link href="/member/workouts" className="font-medium text-[var(--color-accent)] hover:underline">
+              View your workout plan
+            </Link>
+            <Link href="/member/bmi" className="font-medium text-[var(--color-accent)] hover:underline">
+              BMI calculator
+            </Link>
+            <Link href="/member/profile" className="font-medium text-[var(--color-accent)] hover:underline">
+              Edit profile &amp; password
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card className="lg:col-span-2">
         <CardHeader>
           <CardTitle>Payment history</CardTitle>
         </CardHeader>
         <CardContent>
           <PaymentHistory payments={member.payments} />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Quick links</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-wrap gap-4 text-sm">
-          <Link href="/member/progress" className="font-medium text-[var(--color-accent)] hover:underline">
-            Log weight &amp; track your goal
-          </Link>
-          <Link href="/member/workouts" className="font-medium text-[var(--color-accent)] hover:underline">
-            View your workout plan
-          </Link>
-          <Link href="/member/bmi" className="font-medium text-[var(--color-accent)] hover:underline">
-            BMI calculator
-          </Link>
-          <Link href="/member/profile" className="font-medium text-[var(--color-accent)] hover:underline">
-            Edit profile &amp; password
-          </Link>
         </CardContent>
       </Card>
     </div>

@@ -39,7 +39,7 @@ export function ProfileForm({ defaultValues }: ProfileFormProps) {
   });
 
   return (
-    <form onSubmit={onSubmit} className="max-w-xl space-y-4">
+    <form onSubmit={onSubmit} className="space-y-4">
       {serverError ? (
         <p className="rounded-[var(--radius-control)] bg-[var(--color-danger-bg)] px-3 py-2 text-sm text-[var(--color-danger)]">
           {serverError}

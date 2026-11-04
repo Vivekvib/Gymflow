@@ -9,9 +9,9 @@ export const buttonVariants = cva(
       variant: {
         primary: "bg-[var(--color-accent)] text-[var(--color-accent-ink)] hover:brightness-95",
         secondary:
-          "border border-[var(--color-line)] bg-[var(--color-surface)] text-[var(--color-ink)] hover:bg-[var(--color-paper)]",
-        ghost: "text-[var(--color-ink)] hover:bg-[var(--color-paper)]",
-        danger: "bg-[var(--color-danger)] text-white hover:brightness-95",
+          "border border-[var(--color-line-strong)] bg-[var(--color-surface)] text-[var(--color-ink)] hover:bg-[var(--color-subtle)]",
+        ghost: "text-[var(--color-ink)] hover:bg-[var(--color-subtle)]",
+        danger: "bg-[var(--color-danger)] text-[var(--color-accent-ink)] hover:brightness-95",
       },
       size: {
         default: "h-10 px-4",

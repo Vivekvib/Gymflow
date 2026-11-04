@@ -1,11 +1,14 @@
 import { getPublicGym } from "@/modules/gym/service";
 import { siteConfig } from "@/config/site";
+import { PublicPage } from "@/components/marketing/public-page";
 import { Navbar } from "@/components/marketing/navbar";
 import { Hero } from "@/components/marketing/hero";
-import { Facilities } from "@/components/marketing/facilities";
+import { About } from "@/components/marketing/about";
+import { Services } from "@/components/marketing/services";
+import { JoinSteps } from "@/components/marketing/join-steps";
 import { MembershipPlans } from "@/components/marketing/membership-plans";
-import { WhyUs } from "@/components/marketing/why-us";
 import { ContactSection } from "@/components/marketing/contact-section";
+import { CtaBanner } from "@/components/marketing/cta-banner";
 import { Footer } from "@/components/marketing/footer";
 
 export default async function HomePage() {
@@ -16,14 +19,18 @@ export default async function HomePage() {
   const gymName = gym?.name ?? siteConfig.name;
 
   return (
-    <main>
-      <Navbar gymName={gymName} />
-      <Hero gymName={gymName} city={gym?.city} />
-      <Facilities />
-      <MembershipPlans />
-      <WhyUs />
-      <ContactSection gym={gym} />
-      <Footer gymName={gymName} />
-    </main>
+    <PublicPage>
+      <Navbar gymName={gymName} overlay />
+      <main>
+        <Hero gymName={gymName} city={gym?.city} />
+        <About />
+        <Services />
+        <JoinSteps />
+        <MembershipPlans />
+        <ContactSection gym={gym} />
+        <CtaBanner />
+      </main>
+      <Footer gymName={gymName} gym={gym} />
+    </PublicPage>
   );
 }

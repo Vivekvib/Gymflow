@@ -329,7 +329,7 @@ function ExerciseRowFields({
 
       <div className="col-span-1 sm:col-span-3">
         <Label htmlFor={`${fieldPath}.sets`}>Sets</Label>
-        <Input id={`${fieldPath}.sets`} type="number" {...register(`${fieldPath}.sets`)} />
+        <Input id={`${fieldPath}.sets`} type="number" min={1} {...register(`${fieldPath}.sets`)} />
         {rowErrors?.sets ? (
           <p className="mt-1 text-xs text-[var(--color-danger)]">{rowErrors.sets.message}</p>
         ) : null}

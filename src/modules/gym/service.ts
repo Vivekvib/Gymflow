@@ -45,3 +45,17 @@ export async function updateGym(gymId: string, input: UpdateGymInput, actorAdmin
 
   return updated;
 }
+
+/**
+ * For pages that must render even if the database is slow or asleep (the
+ * sign-in pages). A cold Neon compute can fail a lookup; the page should
+ * still load with the fallback name rather than error before anyone has
+ * even typed a password.
+ */
+export async function getPublicGymName(fallback: string): Promise<string> {
+  try {
+    return (await getPublicGym())?.name ?? fallback;
+  } catch {
+    return fallback;
+  }
+}

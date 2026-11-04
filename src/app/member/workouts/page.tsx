@@ -22,6 +22,7 @@ export default async function MemberWorkoutsPage() {
       ) : (
         <div className="space-y-4">
           {plan.notes ? <p className="text-sm text-[var(--color-ink-muted)]">{plan.notes}</p> : null}
+          <div className="grid items-start gap-4 lg:grid-cols-2">
           {plan.days.map((day) => (
             <Card key={day.id}>
               <CardHeader>
@@ -65,6 +66,7 @@ export default async function MemberWorkoutsPage() {
               </CardContent>
             </Card>
           ))}
+          </div>
         </div>
       )}
     </div>

@@ -9,7 +9,8 @@ export function MemberNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="flex gap-1 overflow-x-auto border-b border-[var(--color-line)] bg-[var(--color-surface)] px-4 sm:px-6">
+    <nav className="border-b border-[var(--color-line)] bg-[var(--color-surface)]">
+      <div className="mx-auto flex max-w-[1400px] gap-1 overflow-x-auto px-4 sm:px-6 lg:px-10">
       {memberNavItems.map((item) => {
         const isActive = item.href === "/member" ? pathname === "/member" : pathname.startsWith(item.href);
         return (
@@ -27,6 +28,7 @@ export function MemberNav() {
           </Link>
         );
       })}
+      </div>
     </nav>
   );
 }

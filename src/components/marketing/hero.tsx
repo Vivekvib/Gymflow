@@ -1,5 +1,7 @@
-import Link from "next/link";
-import { buttonVariants } from "@/components/ui/button";
+import { Container } from "@/components/marketing/container";
+import { CtaLink } from "@/components/marketing/cta-link";
+import { DARK_PATTERN, PHOTO_SCRIM } from "@/components/marketing/photo-slot";
+import { heroCopy, marketingImages } from "@/config/marketing";
 
 interface HeroProps {
   gymName: string;
@@ -8,36 +10,44 @@ interface HeroProps {
 }
 
 export function Hero({ gymName, city }: HeroProps) {
+  const photo = marketingImages.hero;
+
   return (
-    <section className="relative overflow-hidden bg-[var(--color-ink)] text-white">
+    <section className="relative isolate overflow-hidden bg-[var(--color-paper)]">
       <div
         aria-hidden
-        className="pointer-events-none absolute -right-24 -top-24 h-96 w-96 rounded-full bg-[var(--color-accent)] opacity-25 blur-3xl"
+        className="absolute inset-0 -z-10 bg-cover bg-center"
+        style={{ backgroundImage: photo ? `url(${photo})` : DARK_PATTERN }}
       />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -bottom-32 -left-16 h-80 w-80 rounded-full bg-[var(--color-accent)] opacity-15 blur-3xl"
-      />
-      <div className="relative mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24 lg:py-32">
-        <div className="max-w-2xl">
-          <h1 className="text-3xl font-semibold leading-tight sm:text-4xl lg:text-5xl">
+      {photo ? (
+        <div aria-hidden className="absolute inset-0 -z-10" style={{ backgroundImage: PHOTO_SCRIM }} />
+      ) : null}
+
+      <Container className="flex min-h-[85svh] flex-col justify-end gap-10 pb-12 pt-32 sm:pb-16 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <p className="text-sm font-semibold text-[var(--color-accent)]">
             {gymName}
-          </h1>
-          <p className="mt-4 text-base text-white/70 sm:text-lg">
-            Free weights, cardio, and coaches who actually watch your form. Join, train, and
-            track your own progress week to week.
+            {city ? `, ${city}` : ""}
           </p>
-          {city ? <p className="mt-2 text-sm text-white/50">{city}</p> : null}
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Link href="/member/login" className={buttonVariants({ size: "lg" })}>
-              Member sign in
-            </Link>
-            <Link href="#plans" className={buttonVariants({ variant: "secondary", size: "lg" })}>
-              See membership plans
-            </Link>
+          <h1 className="mt-4 font-display text-5xl font-bold uppercase leading-[0.95] tracking-tight sm:text-6xl lg:text-7xl xl:text-8xl">
+            {heroCopy.headlineLines.map((line) => (
+              <span key={line} className="block">
+                {line}
+              </span>
+            ))}
+          </h1>
+        </div>
+
+        <div className="max-w-md lg:pb-3">
+          <p className="text-base text-[var(--color-ink-muted)] sm:text-lg">{heroCopy.intro}</p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <CtaLink href="/#plans">See membership plans</CtaLink>
+            <CtaLink href="/member/login" variant="outline">
+              Member login
+            </CtaLink>
           </div>
         </div>
-      </div>
+      </Container>
     </section>
   );
 }

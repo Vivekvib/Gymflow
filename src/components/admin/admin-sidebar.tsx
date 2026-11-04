@@ -30,7 +30,7 @@ export function AdminSidebar({ gymName }: AdminSidebarProps) {
                 "rounded-[var(--radius-control)] px-3 py-2 text-sm font-medium transition-colors",
                 isActive
                   ? "bg-[var(--color-accent)] text-[var(--color-accent-ink)]"
-                  : "text-[var(--color-ink-muted)] hover:bg-[var(--color-paper)] hover:text-[var(--color-ink)]",
+                  : "text-[var(--color-ink-muted)] hover:bg-[var(--color-subtle)] hover:text-[var(--color-ink)]",
               )}
             >
               {item.label}

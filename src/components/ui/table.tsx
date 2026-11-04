@@ -10,7 +10,7 @@ export function Table({ className, ...props }: React.TableHTMLAttributes<HTMLTab
 }
 
 export function TableHead({ className, ...props }: React.HTMLAttributes<HTMLTableSectionElement>) {
-  return <thead className={cn("bg-[var(--color-paper)]", className)} {...props} />;
+  return <thead className={cn("bg-[var(--color-subtle)]", className)} {...props} />;
 }
 
 export function TableBody({ className, ...props }: React.HTMLAttributes<HTMLTableSectionElement>) {
@@ -18,7 +18,7 @@ export function TableBody({ className, ...props }: React.HTMLAttributes<HTMLTabl
 }
 
 export function TableRow({ className, ...props }: React.HTMLAttributes<HTMLTableRowElement>) {
-  return <tr className={cn("hover:bg-[var(--color-paper)]", className)} {...props} />;
+  return <tr className={cn("hover:bg-[var(--color-subtle)]", className)} {...props} />;
 }
 
 export function TableHeaderCell({

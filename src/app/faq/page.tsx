@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { getPublicGym } from "@/modules/gym/service";
 import { siteConfig } from "@/config/site";
+import { PublicPage } from "@/components/marketing/public-page";
+import { Container } from "@/components/marketing/container";
 import { Navbar } from "@/components/marketing/navbar";
 import { Footer } from "@/components/marketing/footer";
 import { FaqItem } from "@/components/marketing/faq-item";
@@ -13,16 +16,28 @@ export default async function FaqPage() {
   const hasContactInfo = Boolean(gym?.phone || gym?.email);
 
   return (
-    <main>
+    <PublicPage>
       <Navbar gymName={gymName} />
 
-      <section className="mx-auto max-w-2xl px-4 py-12 sm:px-6 sm:py-16">
-        <h1 className="text-2xl font-semibold text-[var(--color-ink)] sm:text-3xl">
-          Frequently asked questions
-        </h1>
+      <main>
+        <Container className="grid gap-10 py-14 sm:py-20 lg:grid-cols-12 lg:gap-16">
+          <div className="lg:col-span-4 lg:sticky lg:top-8 lg:self-start">
+            <p className="text-xs font-semibold uppercase tracking-widest text-[var(--color-accent)]">
+              <span aria-hidden>+ </span>
+              FAQ
+            </p>
+            <h1 className="mt-3 font-display text-5xl font-bold uppercase leading-[0.95] tracking-tight sm:text-6xl">
+              Questions, answered
+            </h1>
+            <p className="mt-5 max-w-sm text-sm text-[var(--color-ink-muted)]">
+              {hasContactInfo
+                ? "Question about hours, pricing, or classes? Contact us using the details in the footer."
+                : "Question about hours, pricing, or classes? Ask at the front desk."}
+            </p>
+          </div>
 
-        <div className="mt-8">
-          <FaqItem question="How do I check my membership status?">
+          <div className="lg:col-span-8">
+            <FaqItem question="How do I check my membership status?">
             <p>
               Log in at the member portal with your member ID or phone number and your password.
               Your dashboard shows your current status and exact expiry date.
@@ -72,22 +87,17 @@ export default async function FaqPage() {
           <FaqItem question="Is my personal information kept private?">
             <p>
               Yes - see our{" "}
-              <a href="/privacy" className="font-medium text-[var(--color-accent)] hover:underline">
+              <Link href="/privacy" className="font-medium text-[var(--color-accent)] hover:underline">
                 Privacy Policy
-              </a>{" "}
+              </Link>{" "}
               for details on what we collect and how it&apos;s used.
             </p>
           </FaqItem>
-        </div>
+          </div>
+        </Container>
+      </main>
 
-        <p className="mt-8 text-sm text-[var(--color-ink-muted)]">
-          {hasContactInfo
-            ? "Question about hours, pricing, or classes? Contact us using the details below."
-            : "Question about hours, pricing, or classes? Ask at the front desk."}
-        </p>
-      </section>
-
-      <Footer gymName={gymName} />
-    </main>
+      <Footer gymName={gymName} gym={gym} />
+    </PublicPage>
   );
 }
