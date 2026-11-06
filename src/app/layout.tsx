@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans, Roboto_Condensed } from "next/font/google";
 import "./globals.css";
 import { siteConfig } from "@/config/site";
@@ -20,6 +20,14 @@ const displayFont = Roboto_Condensed({
 export const metadata: Metadata = {
   title: siteConfig.name,
   description: `Membership, payments, and fitness tracking for ${siteConfig.name}.`,
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  // Lets the member tab bar sit above the home indicator on notched phones.
+  viewportFit: "cover",
+  themeColor: "#0c0c0c",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -20,16 +20,49 @@ const METHOD_LABEL: Record<Payment["method"], string> = {
   STRIPE: "Stripe",
 };
 
-export function PaymentHistory({ payments }: { payments: Payment[] }) {
+export function PaymentHistory({
+  payments,
+  emptyDescription = "Record the member's first payment to activate their membership.",
+}: {
+  payments: Payment[];
+  /** Shown when there are no payments; the member's own view words this differently. */
+  emptyDescription?: string;
+}) {
   if (payments.length === 0) {
     return (
       <EmptyState
         title="No payments recorded yet"
-        description="Record the member's first payment to activate their membership."
+        description={emptyDescription}
       />
     );
   }
 
+  return (
+    <>
+      {/* Phones: one entry per payment. A five-column table wraps every date onto three lines at this width. */}
+      <ul className="divide-y divide-[var(--color-line)] rounded-lg border border-[var(--color-line)] md:hidden">
+        {payments.map((payment) => (
+          <li key={payment.id} className="p-4">
+            <div className="flex items-baseline justify-between gap-3">
+              <p className="font-medium text-[var(--color-ink)]">{formatPaise(payment.amountPaise)}</p>
+              <p className="text-sm text-[var(--color-ink-muted)]">{formatDate(payment.paymentDate)}</p>
+            </div>
+            <p className="mt-1 text-sm text-[var(--color-ink-muted)]">
+              {payment.planDurationDays} days, paid by {METHOD_LABEL[payment.method]}. Valid till{" "}
+              {formatDate(payment.membershipEndAfter)}.
+            </p>
+          </li>
+        ))}
+      </ul>
+
+      <div className="hidden md:block">
+        <PaymentTable payments={payments} />
+      </div>
+    </>
+  );
+}
+
+function PaymentTable({ payments }: { payments: Payment[] }) {
   return (
     <Table>
       <TableHead>

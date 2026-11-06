@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { normalizePhone, phoneLookupCandidates } from "@/lib/phone";
 import { recordAuditLog } from "@/lib/audit";
 import { verifyPassword } from "@/modules/auth/password";
 import {
@@ -85,17 +86,31 @@ export async function memberLoginAction(
   }
   const { identifier, password } = parsed.data;
 
-  const ip = await clientIp();
-  const rateLimit = checkRateLimit(`member-login:${ip}:${identifier}`, LOGIN_RATE_LIMIT);
+  // The same person can type "GYM-0001", "gym-0001", "98107 40347" or
+  // "+91 9810740347". Rate-limiting on the normalized form means writing the
+  // same login a different way doesn't buy extra attempts.
+  const memberCode = identifier.replace(/\s+/g, "");
+  // Only treat it as a phone number if it is made of phone characters - a
+  // member ID like "GYM-0001" contains letters and must not be matched as one.
+  const looksLikePhone = /^[+\d\s().-]+$/.test(identifier);
+  const phoneCandidates = looksLikePhone ? phoneLookupCandidates(identifier) : [];
+  const rateLimitKey = `member-login:${await clientIp()}:${memberCode.toLowerCase()}:${normalizePhone(identifier)}`;
+
+  const rateLimit = checkRateLimit(rateLimitKey, LOGIN_RATE_LIMIT);
   if (!rateLimit.allowed) {
     return actionError(`Too many attempts. Try again in ${rateLimit.retryAfterSeconds}s.`);
   }
 
   const member = await db.member.findFirst({
-    where: { OR: [{ memberCode: identifier }, { phone: identifier }] },
+    where: {
+      OR: [
+        { memberCode: { equals: memberCode, mode: "insensitive" } },
+        ...(phoneCandidates.length > 0 ? [{ phone: { in: phoneCandidates } }] : []),
+      ],
+    },
   });
 
-  const genericError = "Incorrect member ID/phone or password.";
+  const genericError = "Incorrect member ID, mobile number or password.";
   if (!member || !member.active) {
     return actionError(genericError);
   }

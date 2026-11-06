@@ -3,8 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { formatDate } from "@/lib/dates";
+import { formatPhoneDisplay } from "@/lib/phone";
 import { getMemberStatus } from "@/modules/members/service";
-import { MEMBER_STATUS_LABEL, MEMBER_STATUS_TONE } from "@/modules/members/types";
+import { getMemberStatusDisplay } from "@/modules/members/types";
 import { setMemberActiveAction } from "@/modules/members/actions";
 import type { Member } from "@/generated/prisma/client";
 
@@ -14,7 +15,7 @@ async function toggleMemberActive(memberId: string, active: boolean): Promise<vo
 }
 
 export function MemberProfileCard({ member }: { member: Member }) {
-  const status = getMemberStatus(member);
+  const status = getMemberStatusDisplay(getMemberStatus(member), member.membershipEnd);
   // Binding args onto the Server Action lets a plain <form> submit it
   // without a client component - see Next.js Server Actions docs on
   // passing extra arguments via `.bind()`. The wrapper discards the
@@ -26,11 +27,11 @@ export function MemberProfileCard({ member }: { member: Member }) {
     <Card>
       <CardHeader className="flex items-center justify-between">
         <CardTitle>{member.name}</CardTitle>
-        <Badge tone={MEMBER_STATUS_TONE[status]}>{MEMBER_STATUS_LABEL[status]}</Badge>
+        <Badge tone={status.tone}>{status.label}</Badge>
       </CardHeader>
       <CardContent className="space-y-3 text-sm">
         <Row label="Member ID" value={member.memberCode} />
-        <Row label="Phone" value={member.phone} />
+        <Row label="Mobile" value={formatPhoneDisplay(member.phone)} />
         <Row label="Email" value={member.email ?? "-"} />
         <Row label="Joined" value={formatDate(member.joinDate)} />
         <Row

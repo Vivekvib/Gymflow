@@ -9,11 +9,12 @@ export type AdminLoginInput = z.infer<typeof adminLoginSchema>;
 
 /**
  * Members log in with either their member ID (e.g. "GYM-0001") or their
- * phone number - `identifier` covers both and modules/members/service.ts
- * decides which lookup to use based on the shape of the value.
+ * mobile number. `identifier` covers both: memberLoginAction matches it
+ * against the member ID (any capitalisation) and against every common way a
+ * mobile number is written (see lib/phone.ts).
  */
 export const memberLoginSchema = z.object({
-  identifier: z.string().trim().min(3, "Enter your member ID or phone number"),
+  identifier: z.string().trim().min(3, "Enter your member ID or mobile number"),
   password: z.string().min(1, "Password is required"),
 });
 

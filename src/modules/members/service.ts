@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { NotFoundError } from "@/lib/errors";
 import { recordAuditLog } from "@/lib/audit";
 import { isPast, isWithinNextDays } from "@/lib/dates";
+import { phoneLookupCandidates, stripPhoneFormatting } from "@/lib/phone";
 import { hashPassword, verifyPassword } from "@/modules/auth/password";
 import { generateMemberCode } from "@/modules/members/member-id";
 import { EXPIRING_SOON_DAYS, DEFAULT_PAGE_SIZE, DB_TRANSACTION_OPTIONS } from "@/config/constants";
@@ -69,15 +70,18 @@ export async function listMembers(
 ): Promise<MemberListResult> {
   const now = new Date();
   const expiringThreshold = new Date(now);
-  expiringThreshold.setDate(expiringThreshold.getDate() + EXPIRING_SOON_DAYS);
+  expiringThreshold.setDate(expiringThreshold.getDate() + (query.within ?? EXPIRING_SOON_DAYS));
 
   const filters: Prisma.MemberWhereInput[] = [{ gymId }];
 
   if (query.query) {
+    // "98107 40347" should find a number stored as "9810740347".
+    const phoneQuery = stripPhoneFormatting(query.query);
     filters.push({
       OR: [
         { name: { contains: query.query, mode: "insensitive" } },
         { phone: { contains: query.query } },
+        ...(phoneQuery && phoneQuery !== query.query ? [{ phone: { contains: phoneQuery } }] : []),
         { memberCode: { contains: query.query, mode: "insensitive" } },
       ],
     });
@@ -144,11 +148,36 @@ async function getOwnedMemberOrThrow(gymId: string, memberId: string) {
   return member;
 }
 
+/**
+ * Phone numbers are unique, but rows saved before numbers were normalized may
+ * hold the same number in another spelling ("+919810740347" vs "9810740347"),
+ * which the database's unique index can't see. Checked here so the same
+ * person can't end up as two members.
+ */
+async function assertPhoneAvailable(phone: string, exceptMemberId?: string) {
+  const clash = await db.member.findFirst({
+    where: {
+      phone: { in: phoneLookupCandidates(phone) },
+      ...(exceptMemberId ? { id: { not: exceptMemberId } } : {}),
+    },
+    select: { id: true },
+  });
+  if (clash) throw new PhoneInUseError();
+}
+
+class PhoneInUseError extends Error {
+  constructor() {
+    super("That mobile number is already used by another member.");
+    this.name = "PhoneInUseError";
+  }
+}
+
 export async function createMember(
   gymId: string,
   input: CreateMemberInput,
   actorAdminId: string,
 ) {
+  await assertPhoneAvailable(input.phone);
   const passwordHash = await hashPassword(input.password);
   let lastError: unknown;
 
@@ -193,7 +222,7 @@ export async function createMember(
           continue;
         }
         if (target.includes("phone")) {
-          throw new Error("A member with this phone number already exists.");
+          throw new PhoneInUseError();
         }
       }
       throw error;
@@ -222,7 +251,7 @@ function rethrowFriendlyPhoneConflict(error: unknown): never {
   if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
     const target = Array.isArray(error.meta?.target) ? (error.meta.target as string[]) : [];
     if (target.includes("phone")) {
-      throw new Error("That phone number is already in use by another member.");
+      throw new PhoneInUseError();
     }
   }
   throw error;
@@ -235,6 +264,7 @@ export async function updateMember(
   actorAdminId: string,
 ) {
   await getOwnedMemberOrThrow(gymId, memberId);
+  await assertPhoneAvailable(input.phone, memberId);
 
   const updated = await db.member
     .update({ where: { id: memberId }, data: buildMemberUpdateData(input) })
@@ -260,6 +290,7 @@ export async function updateMember(
  */
 export async function updateOwnProfile(gymId: string, memberId: string, input: UpdateMemberInput) {
   await getOwnedMemberOrThrow(gymId, memberId);
+  await assertPhoneAvailable(input.phone, memberId);
 
   return db.member
     .update({ where: { id: memberId }, data: buildMemberUpdateData(input) })

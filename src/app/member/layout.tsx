@@ -16,7 +16,8 @@ export default async function MemberLayout({ children }: { children: React.React
     <div className="min-h-screen">
       <MemberHeader gymName={gym?.name ?? "GymFlow"} memberName={member?.name ?? "Member"} />
       <MemberNav />
-      <main className="mx-auto w-full max-w-[1400px] p-4 sm:p-6 lg:p-10">{children}</main>
+      {/* Extra bottom space on phones so the fixed tab bar never covers content. */}
+      <main className="mx-auto w-full max-w-[1400px] p-4 pb-28 sm:p-6 sm:pb-6 lg:p-10">{children}</main>
     </div>
   );
 }

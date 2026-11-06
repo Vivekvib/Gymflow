@@ -28,10 +28,10 @@ interface MarketingImages {
  * public/images/README.md for recommended sizes.
  */
 export const marketingImages: MarketingImages = {
-  hero: null,
-  aboutLeft: null,
-  aboutRight: null,
-  cta: null,
+  hero: "/images/hero.jpg",
+  aboutLeft: "/images/about-floor.jpg",
+  aboutRight: "/images/about-front-desk.jpg",
+  cta: "/images/cta.jpg",
   services: {
     plans: null,
     strength: null,
@@ -79,11 +79,11 @@ export const servicesCopy = {
         "A day-by-day plan from your trainer, with a demo video for each exercise you can open on your phone.",
     },
     {
-      // ASSUMPTION: generic gym wording, edit to match the real equipment.
+      // Plate-loaded machines are visible in the gym's own photos; "free weights" is still generic wording.
       key: "strength",
       icon: "dumbbell",
       title: "Strength training",
-      description: "Free weights and machines for every level, from first week to experienced.",
+      description: "Plate-loaded machines and free weights for every level, from first week to experienced.",
     },
     {
       // ASSUMPTION: generic gym wording, edit to match the real equipment.

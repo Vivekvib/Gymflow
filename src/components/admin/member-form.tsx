@@ -81,8 +81,11 @@ export function MemberForm(props: MemberFormProps) {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
-          <Label htmlFor="phone">Phone</Label>
-          <Input id="phone" {...register("phone")} />
+          <Label htmlFor="phone">Mobile number</Label>
+          <Input id="phone" type="tel" inputMode="tel" autoComplete="off" placeholder="9810740347" {...register("phone")} />
+          <p className="mt-1 text-xs text-[var(--color-ink-muted)]">
+            The member can sign in with this number or their member ID.
+          </p>
           <FieldError message={fieldErrors.phone?.message} />
         </div>
         <div>
@@ -120,8 +123,8 @@ export function MemberForm(props: MemberFormProps) {
           <Input id="emergencyContactName" {...register("emergencyContactName")} />
         </div>
         <div>
-          <Label htmlFor="emergencyContactPhone">Emergency contact phone</Label>
-          <Input id="emergencyContactPhone" {...register("emergencyContactPhone")} />
+          <Label htmlFor="emergencyContactPhone">Emergency contact number</Label>
+          <Input id="emergencyContactPhone" type="tel" inputMode="tel" autoComplete="off" {...register("emergencyContactPhone")} />
           <FieldError message={fieldErrors.emergencyContactPhone?.message} />
         </div>
       </div>

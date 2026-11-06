@@ -59,8 +59,11 @@ export function ProfileForm({ defaultValues }: ProfileFormProps) {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
-          <Label htmlFor="phone">Phone</Label>
-          <Input id="phone" {...register("phone")} />
+          <Label htmlFor="phone">Mobile number</Label>
+          <Input id="phone" type="tel" inputMode="tel" autoComplete="tel" {...register("phone")} />
+          <p className="mt-1 text-xs text-[var(--color-ink-muted)]">
+            You can also sign in with this number.
+          </p>
           {errors.phone ? (
             <p className="mt-1 text-xs text-[var(--color-danger)]">{errors.phone.message}</p>
           ) : null}
@@ -104,8 +107,8 @@ export function ProfileForm({ defaultValues }: ProfileFormProps) {
           <Input id="emergencyContactName" {...register("emergencyContactName")} />
         </div>
         <div>
-          <Label htmlFor="emergencyContactPhone">Emergency contact phone</Label>
-          <Input id="emergencyContactPhone" {...register("emergencyContactPhone")} />
+          <Label htmlFor="emergencyContactPhone">Emergency contact number</Label>
+          <Input id="emergencyContactPhone" type="tel" inputMode="tel" autoComplete="off" {...register("emergencyContactPhone")} />
           {errors.emergencyContactPhone ? (
             <p className="mt-1 text-xs text-[var(--color-danger)]">
               {errors.emergencyContactPhone.message}

@@ -37,9 +37,9 @@ export function About() {
 
         {hasPhotos && aboutLeft && aboutRight ? (
           <div className="mt-14 grid gap-6 lg:grid-cols-[1fr_1.1fr_1fr] lg:items-center">
-            <PhotoSlot src={aboutLeft} alt="Inside the gym" className="aspect-[4/5]" />
+            <PhotoSlot src={aboutLeft} alt="Plate-loaded leg press machine on the gym floor" className="aspect-[4/5]" />
             <ul className="space-y-8">{points}</ul>
-            <PhotoSlot src={aboutRight} alt="Training at the gym" className="aspect-[4/5]" />
+            <PhotoSlot src={aboutRight} alt="Two people at the gym's front desk" className="aspect-[4/5]" />
           </div>
         ) : (
           <ul className="mt-14 grid gap-8 md:grid-cols-3">{points}</ul>

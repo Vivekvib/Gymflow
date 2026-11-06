@@ -1,9 +1,18 @@
 import { z } from "zod";
+import { DASHBOARD_EXPIRY_WINDOWS } from "@/config/constants";
+import { normalizePhone, stripPhoneFormatting } from "@/lib/phone";
 
+/**
+ * Accepts a number however it was typed ("98107 40347", "+91 98107-40347")
+ * and stores one canonical form (see lib/phone.ts), so the member can later
+ * sign in with it no matter how they write it.
+ */
 const phoneSchema = z
   .string()
   .trim()
-  .regex(/^\+?[0-9]{7,15}$/, "Enter a valid phone number (digits only, optional leading +)");
+  .transform(stripPhoneFormatting)
+  .pipe(z.string().regex(/^\+?[0-9]{7,15}$/, "Enter a valid mobile number, for example 9810740347"))
+  .transform(normalizePhone);
 
 const optionalEmailSchema = z
   .union([z.string().trim().email("Enter a valid email address"), z.literal("")])
@@ -61,6 +70,16 @@ export type AdminResetPasswordInput = z.infer<typeof adminResetPasswordSchema>;
 export const memberListQuerySchema = z.object({
   query: z.string().trim().optional(),
   status: z.enum(["ALL", "ACTIVE", "EXPIRING", "EXPIRED", "INACTIVE"]).default("ALL"),
+  /**
+   * Narrows the EXPIRING filter to memberships ending within this many days
+   * (the dashboard's 7 / 15 / 30 day links). Anything else is ignored.
+   */
+  within: z.coerce
+    .number()
+    .int()
+    .refine((value) => (DASHBOARD_EXPIRY_WINDOWS as readonly number[]).includes(value))
+    .optional()
+    .catch(undefined),
   page: z.coerce.number().int().min(1).default(1),
 });
 

@@ -38,8 +38,20 @@ export function MemberLoginForm() {
       ) : null}
 
       <div>
-        <Label htmlFor="identifier">Member ID or phone number</Label>
-        <Input id="identifier" autoComplete="username" {...register("identifier")} />
+        <Label htmlFor="identifier">Member ID or mobile number</Label>
+        <Input
+          id="identifier"
+          autoComplete="username"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
+          placeholder="GYM-0001 or 9810740347"
+          aria-describedby="identifier-hint"
+          {...register("identifier")}
+        />
+        <p id="identifier-hint" className="mt-1 text-xs text-[var(--color-ink-muted)]">
+          Use the mobile number you gave at the front desk, with or without +91.
+        </p>
         {errors.identifier ? (
           <p className="mt-1 text-xs text-[var(--color-danger)]">{errors.identifier.message}</p>
         ) : null}
