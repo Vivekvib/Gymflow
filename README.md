@@ -1,8 +1,24 @@
-# GymFlow
+# 🏋️ GymFlow
+
+---
+
+[![Live Demo](https://img.shields.io/badge/LIVE_DEMO-GYMFLOW--THREE--XI.VERCEL.APP-d4ff00?style=for-the-badge&labelColor=3a3a3a)](https://gymflow-three-xi.vercel.app/)
+
+![Next.js](https://img.shields.io/badge/Next.js-16-000000?style=flat&logo=nextdotjs&logoColor=white&labelColor=3a3a3a)
+![React](https://img.shields.io/badge/React-19-149eca?style=flat&logo=react&logoColor=white&labelColor=3a3a3a)
+![TypeScript](https://img.shields.io/badge/TypeScript-Strict-3178c6?style=flat&logo=typescript&logoColor=white&labelColor=3a3a3a)
+![Tailwind](https://img.shields.io/badge/Tailwind-v4-0ea5b7?style=flat&logo=tailwindcss&logoColor=white&labelColor=3a3a3a)
+![Prisma](https://img.shields.io/badge/Prisma-7-5a67d8?style=flat&logo=prisma&logoColor=white&labelColor=3a3a3a)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon-1f9d6b?style=flat&logo=postgresql&logoColor=white&labelColor=3a3a3a)
+![Vitest](https://img.shields.io/badge/Tests-Vitest-6e9f18?style=flat&logo=vitest&logoColor=white&labelColor=3a3a3a)
+![Hosting](https://img.shields.io/badge/Hosting-Vercel-000000?style=flat&logo=vercel&logoColor=white&labelColor=3a3a3a)
 
 A membership, payments, and fitness-tracking platform for a single gym today,
 architected for multiple locations later. Two roles: **Admin** (gym owner/staff)
 and **Member**.
+
+
+![Dashboard](image.png)
 
 ## What's implemented right now
 
@@ -120,7 +136,7 @@ with `DATABASE_DRIVER=neon` or `DATABASE_DRIVER=pg` if you ever need to.
 
 Open:
 
-- `http://localhost:3000/admin/login` - `owner@gymflow.dev` / `Admin@12345`
+- `http://localhost:3000/admin/login` - `owner@gymflow.dev` / `Owner@12`
 - `http://localhost:3000/member/login` - any row below, password `Member@12345`
 
 ### Test members
@@ -151,8 +167,8 @@ gym's name, phone and address have to be entered once in **Admin -> Settings**
 ### Environment variables
 
 ```env
-DATABASE_URL="postgresql://gym:gym@localhost:5432/gymflow"
-DIRECT_URL="postgresql://gym:gym@localhost:5432/gymflow"
+DATABASE_URL="postgresql://gym:gym@localhost:5433/gymflow"
+DIRECT_URL="postgresql://gym:gym@localhost:5433/gymflow"
 SESSION_SECRET="replace-with-a-long-random-secret"
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
 NEXT_PUBLIC_GYM_NAME="Your Gym"
