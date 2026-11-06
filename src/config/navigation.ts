@@ -10,10 +10,16 @@ export const adminNavItems: NavItem[] = [
   { label: "Settings", href: "/admin/settings" },
 ];
 
-export const memberNavItems: NavItem[] = [
-  { label: "Dashboard", href: "/member" },
-  { label: "Progress", href: "/member/progress" },
-  { label: "Workouts", href: "/member/workouts" },
-  { label: "BMI Calculator", href: "/member/bmi" },
-  { label: "Profile", href: "/member/profile" },
+export interface MemberNavItem extends NavItem {
+  /** Short label for the phone's bottom tab bar, where five full labels don't fit. */
+  shortLabel: string;
+  icon: "home" | "workouts" | "progress" | "bmi" | "profile";
+}
+
+export const memberNavItems: MemberNavItem[] = [
+  { label: "Dashboard", shortLabel: "Home", href: "/member", icon: "home" },
+  { label: "Workouts", shortLabel: "Workouts", href: "/member/workouts", icon: "workouts" },
+  { label: "Progress", shortLabel: "Progress", href: "/member/progress", icon: "progress" },
+  { label: "BMI Calculator", shortLabel: "BMI", href: "/member/bmi", icon: "bmi" },
+  { label: "Profile", shortLabel: "Profile", href: "/member/profile", icon: "profile" },
 ];

@@ -2,8 +2,9 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 
 export function Table({ className, ...props }: React.TableHTMLAttributes<HTMLTableElement>) {
+  // `relative` keeps screen-reader-only text inside the scroll box instead of widening the page.
   return (
-    <div className="w-full overflow-x-auto rounded-lg border border-[var(--color-line)]">
+    <div className="relative w-full overflow-x-auto rounded-lg border border-[var(--color-line)]">
       <table className={cn("w-full text-left text-sm", className)} {...props} />
     </div>
   );

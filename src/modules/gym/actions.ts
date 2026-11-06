@@ -27,5 +27,11 @@ export async function updateGymAction(input: UpdateGymInput): Promise<ActionResu
   // refresh them, not just the settings page itself.
   revalidatePath("/admin", "layout");
   revalidatePath("/member", "layout");
+  // The public pages are prerendered with the gym's name, phone and address
+  // (navbar, contact section, footer). Without this, a change saved here
+  // would not appear on the website until the next deploy.
+  revalidatePath("/");
+  revalidatePath("/faq");
+  revalidatePath("/privacy");
   return actionSuccess();
 }

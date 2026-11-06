@@ -10,7 +10,7 @@ export default async function MemberLoginPage() {
     <AuthShell
       gymName={gymName}
       title="Member sign in"
-      subtitle="Use your member ID or phone number."
+      subtitle="Sign in with your member ID or mobile number."
       alternate={{
         text: "Gym staff?",
         label: "Go to staff sign in",

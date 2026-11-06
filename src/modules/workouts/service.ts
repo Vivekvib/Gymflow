@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { NotFoundError } from "@/lib/errors";
 import { recordAuditLog } from "@/lib/audit";
 import { DB_TRANSACTION_OPTIONS } from "@/config/constants";
+import { DEFAULT_TIMEZONE, startOfZonedDay, startOfZonedWeek, zonedDayOfWeek } from "@/lib/dates";
 import type { WorkoutPlanInput } from "@/modules/workouts/validation";
 
 /**
@@ -121,4 +122,93 @@ export async function upsertWorkoutPlan(
   });
 
   return plan;
+}
+
+// ---------------------------------------------------------------------------
+// Member-side tracking: which plan days the member has done
+// ---------------------------------------------------------------------------
+
+async function getGymTimezone(gymId: string): Promise<string> {
+  const gym = await db.gym.findUnique({ where: { id: gymId }, select: { timezone: true } });
+  return gym?.timezone ?? DEFAULT_TIMEZONE;
+}
+
+export interface WorkoutOverview {
+  plan: NonNullable<Awaited<ReturnType<typeof getWorkoutPlan>>>;
+  /** 0 = Sunday .. 6 = Saturday, in the gym's timezone. */
+  todayDayOfWeek: number;
+  /** Plan day ids the member has marked done at any point this (Monday-start) week. */
+  doneThisWeek: ReadonlySet<string>;
+  /** Plan day ids marked done today. */
+  doneToday: ReadonlySet<string>;
+}
+
+/**
+ * The member's plan plus what they've ticked off. "Today" and "this week" are
+ * the gym's (IST), so a workout marked at 11pm doesn't count for tomorrow.
+ * Returns null when the member has no plan.
+ */
+export async function getWorkoutOverview(gymId: string, memberId: string): Promise<WorkoutOverview | null> {
+  const [plan, timeZone] = await Promise.all([getWorkoutPlan(gymId, memberId), getGymTimezone(gymId)]);
+  if (!plan) return null;
+
+  const now = new Date();
+  const weekStart = startOfZonedWeek(now, timeZone);
+  const todayStart = startOfZonedDay(now, timeZone);
+
+  // WorkoutCompletion has no gymId of its own; memberId is safe because
+  // getWorkoutPlan already confirmed this member belongs to gymId.
+  const completions = await db.workoutCompletion.findMany({
+    where: {
+      memberId,
+      completedDate: { gte: weekStart },
+      workoutPlanDayId: { in: plan.days.map((day) => day.id) },
+    },
+    select: { workoutPlanDayId: true, completedDate: true },
+  });
+
+  return {
+    plan,
+    todayDayOfWeek: zonedDayOfWeek(now, timeZone),
+    doneThisWeek: new Set(completions.map((completion) => completion.workoutPlanDayId)),
+    doneToday: new Set(
+      completions
+        .filter((completion) => completion.completedDate >= todayStart)
+        .map((completion) => completion.workoutPlanDayId),
+    ),
+  };
+}
+
+async function assertDayInMembersPlan(gymId: string, memberId: string, workoutPlanDayId: string) {
+  const plan = await getWorkoutPlan(gymId, memberId);
+  if (!plan?.days.some((day) => day.id === workoutPlanDayId)) {
+    throw new NotFoundError("Workout day");
+  }
+}
+
+/**
+ * Marks a plan day as done today. Safe to call twice (a double tap): the
+ * second call finds today's completion and does nothing.
+ */
+export async function completeWorkoutDay(gymId: string, memberId: string, workoutPlanDayId: string) {
+  await assertDayInMembersPlan(gymId, memberId, workoutPlanDayId);
+
+  const todayStart = startOfZonedDay(new Date(), await getGymTimezone(gymId));
+  const existing = await db.workoutCompletion.findFirst({
+    where: { memberId, workoutPlanDayId, completedDate: { gte: todayStart } },
+    select: { id: true },
+  });
+  if (existing) return;
+
+  await db.workoutCompletion.create({ data: { memberId, workoutPlanDayId } });
+}
+
+/** Undoes today's tick for a plan day (a mis-tap). Earlier days are left alone. */
+export async function undoWorkoutDay(gymId: string, memberId: string, workoutPlanDayId: string) {
+  await assertDayInMembersPlan(gymId, memberId, workoutPlanDayId);
+
+  const todayStart = startOfZonedDay(new Date(), await getGymTimezone(gymId));
+  await db.workoutCompletion.deleteMany({
+    where: { memberId, workoutPlanDayId, completedDate: { gte: todayStart } },
+  });
 }

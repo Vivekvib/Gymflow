@@ -8,16 +8,22 @@ and **Member**.
 
 - **Auth** - Argon2id-hashed passwords, signed HttpOnly session cookies (admin
   and member are independent sessions), Edge middleware route protection,
-  rate-limited login, audit logging.
+  rate-limited login, audit logging. **Members sign in with their member ID
+  or their mobile number** - see [Signing in by mobile number](#signing-in-by-mobile-number).
 - **Members** - full CRUD (create, edit, deactivate/reactivate), search,
   status filtering, pagination, sequential member-ID generation.
 - **Payments** - record a payment, membership expiry auto-extends using the
   rule in [Membership expiry logic](#membership-expiry-logic), full payment
   history per member.
-- **Admin dashboard** - total/active members, payments today/this month,
-  memberships expiring in 7/15/30 days.
-- **Member dashboard** - membership status, payment history, quick links
-  into every member sub-page.
+- **Admin dashboard** - money first (collected this month vs last month,
+  collected today), then active / new members, a six-month revenue chart,
+  and a **Renewals due** list (next 7 days, with the most urgent first) where
+  each row has Call, WhatsApp-reminder and Renew buttons. The member list has
+  the same one-tap Call / WhatsApp / Renew actions, and searches by name,
+  mobile number or member ID.
+- **Member dashboard** - a days-left ring for the membership, today's
+  workout with a one-tap "Mark as done", a week strip, and the payment
+  history. On a phone it has a bottom tab bar, like an app.
 - **Member progress tracking** - weight logging, body measurements, a goal
   (with an auto-computed progress bar toward the target weight), a
   weight-over-time chart, and BMI derived live from the latest weight +
@@ -32,6 +38,10 @@ and **Member**.
   from only that group's exercises (570 in total, from the gym's own
   spreadsheet). Members see each exercise with a "Watch video" link where a
   demonstration exists. See [Exercise catalog](#exercise-catalog).
+  Members can **tick off a day** as done (and undo it the same day); the
+  admin plan stays read-only to members. Completion is stored per member and
+  per day of the gym's own calendar (IST), so a late-night workout lands on
+  the right date.
 - **Settings** - admin can edit the gym's name/phone/email/address/city,
   stored in the database (not env vars) - the admin sidebar and member
   header both reflect the current name live after a save.
@@ -47,8 +57,11 @@ and **Member**.
   plus the FAQ, privacy policy, and sign-in pages in the same style. All
   wording, photos, and prices live in one file, `src/config/marketing.ts`
   (see [Editing the public website](#editing-the-public-website)). Mobile
-  layout covers the whole app (admin has a phone nav bar; multi-column
-  forms drop to one column below `sm`).
+  layout covers the whole app: phone, tablet and laptop were each checked
+  (see [Testing](#testing)). Admin uses a sidebar from tablet width up and a
+  top bar on a phone; the member list is a card list below 1280px and a
+  table above it, so nothing ever scrolls sideways.
+- **Installable as an app (PWA)** - see [Installing it like an app](#installing-it-like-an-app).
 - **Admin can reset a locked-out member's password** directly from the
   member detail page - previously the only password-reset path
   (`pnpm admin:reset-password`) only touched the Admin table, so a member
@@ -64,12 +77,12 @@ and **Member**.
 | Framework | Next.js 16 (App Router) + TypeScript + React 19 |
 | Styling / components | Tailwind CSS v4 + a small in-repo shadcn-style component set (Radix-free native elements) |
 | Animation | Motion (`motion/react`) - installed, not yet used by anything built so far |
-| Database | PostgreSQL |
+| Database | PostgreSQL (Neon in production, any Postgres locally) |
 | ORM | Prisma 7 (driver-adapter based - see [Prisma 7 notes](#prisma-7-notes)) |
 | Auth | Custom sessions (`jose` for Edge-compatible JWTs) + Argon2id |
 | Validation | Zod |
 | Forms | React Hook Form + `@hookform/resolvers` |
-| Charts | Recharts - installed, not yet used (no chart-bearing pages built yet) |
+| Charts | Recharts (member weight chart, admin revenue chart) |
 | Payments | Provider-agnostic `Payment` model; manual methods (cash/UPI/card/bank transfer) implemented, Razorpay adapter stubbed |
 | Deployment | Vercel |
 | Package manager | pnpm |
@@ -83,8 +96,9 @@ and **Member**.
   prepare pnpm@10.34.5 --activate`. Don't use `pnpm@latest` here - pnpm 12+
   ships as a native executable that Corepack's Windows support doesn't
   reliably handle yet.
-- A free [Neon](https://neon.tech) Postgres project (see the note under
-  Setup for why - the app's driver is Neon-specific)
+- A free [Neon](https://neon.tech) Postgres project for production (or any
+  Postgres for local development - the right driver is picked automatically,
+  see [Prisma 7 notes](#prisma-7-notes))
 - Git
 
 ## Setup
@@ -94,26 +108,45 @@ git clone <repository-url>
 cd gymflow
 pnpm install               # also runs `prisma generate` via postinstall
 cp .env.example .env       # then edit .env - see below
-docker compose up -d       # local Postgres - see note below before using this
+docker compose up -d       # local Postgres (or point DATABASE_URL at a Neon dev branch)
 pnpm db:migrate            # creates the schema (prompts for a migration name the first time)
-pnpm db:seed               # creates a demo gym, admin, and 3 members
+pnpm db:seed               # creates a test gym, an admin, and 8 test members
 pnpm dev
 ```
 
-**Note on `docker compose up -d`:** this app's code now talks to the
-database through Neon's own driver (see [Prisma 7 notes](#prisma-7-notes)),
-which only works against Neon's infrastructure, not a plain local Postgres
-container - so that command starts a database the app can't actually
-connect to, as things stand. Use a free Neon project for local development
-too (same as production, just a separate project/branch), or see the
-Prisma 7 notes for what to revert if you'd rather run Postgres locally.
+`docker compose up -d` works again: a `localhost` connection string uses the
+plain `pg` driver, and a `*.neon.tech` one uses Neon's. Override the guess
+with `DATABASE_DRIVER=neon` or `DATABASE_DRIVER=pg` if you ever need to.
 
 Open:
 
-- `http://localhost:3000/admin/login` (seeded admin: `owner@gymflow.dev` / `Admin@12345`)
-- `http://localhost:3000/member/login` (seeded member: `GYM-0001` / `Member@12345`)
+- `http://localhost:3000/admin/login` - `owner@gymflow.dev` / `Admin@12345`
+- `http://localhost:3000/member/login` - any row below, password `Member@12345`
 
-**Never reuse the seeded credentials outside local development.**
+### Test members
+
+`pnpm db:seed` creates eight members, each in a different situation, so every
+screen and empty state can be tried without typing anything in. Dates are
+relative to the day you run it, so "ends in 5 days" stays true. A member can
+sign in with either the ID or the mobile number.
+
+| Member ID | Mobile | Name | Situation |
+|---|---|---|---|
+| `GYM-0001` | 9876500001 | Ananya Sharma | Active, 60 days left, full data (weight chart, goal, plan) |
+| `GYM-0002` | 9876500002 | Rahul Verma | Ends in 5 days - appears in Renewals due |
+| `GYM-0003` | 9876500003 | Priya Nair | Lapsed 12 days ago - can still sign in, sees a renewal prompt |
+| `GYM-0004` | 9876500004 | Arjun Mehta | Joined today, no payment, no plan - every empty state |
+| `GYM-0005` | 9876500005 | Simran Kaur | Deactivated - cannot sign in |
+| `GYM-0006` | 9876500006 | Vikram Singh | Active, 64 days left, five payments, a workout today |
+| `GYM-0007` | 9876500007 | Neha Gupta | Active, 18 days left, no height / weight / plan |
+| `GYM-0008` | 9876500008 | Karan Malhotra | Ends in 3 days - the most urgent renewal |
+
+**These passwords are public, and the seed refuses to run when `NODE_ENV` is
+`production` or `VERCEL` is set. Never run it against a real gym's database:**
+the test members would show up in the owner's member list and revenue
+totals. The seed also never overwrites an existing gym profile, so the real
+gym's name, phone and address have to be entered once in **Admin -> Settings**
+(the seed's "CGR Fitness Club" details only apply to a fresh test database).
 
 ### Environment variables
 
@@ -143,6 +176,51 @@ node -e "console.log(require('crypto').randomBytes(48).toString('base64'))"
 `src/lib/env.ts` validates all of this at startup with Zod - a missing or
 too-short `SESSION_SECRET` fails the build/boot immediately instead of
 surfacing as a confusing error the first time someone logs in.
+
+## Signing in by mobile number
+
+On the member sign-in page the first field is "Member ID or mobile number".
+Either works, with the same password:
+
+- Member ID: any case, extra spaces ignored (`gym-0006`, `  GYM-0006 `).
+- Mobile: the ten digits, or with `+91`, `91`, a leading `0`, spaces or
+  dashes (`98765 00006`, `+91 98765 00006`, `098765-00006`).
+
+How it fits together:
+
+- Mobile numbers are stored in one canonical form (the ten digits) by
+  `src/lib/phone.ts`, which normalizes on every create and edit. A number can
+  belong to one member per gym: saving a duplicate shows a clear error
+  instead of making two accounts that both match the same sign-in.
+- Sign-in looks the member up by ID **or** by any spelling of the stored
+  number, so members created before this feature (whose numbers may have
+  been saved with spaces or `+91`) still work without a data migration.
+- The "wrong ID/number or password" message is the same for every failure,
+  and the rate limit is keyed on the identifier, so the form can't be used
+  to find out which numbers belong to members.
+- The helpers in `phone.ts` also build the one-tap links used by the admin
+  screens: `tel:` for Call and `https://wa.me/91XXXXXXXXXX?text=...` for a
+  WhatsApp message (opens WhatsApp with the text ready; nothing is sent by
+  the app itself and there is no WhatsApp API fee).
+
+## Installing it like an app
+
+The site is an installable web app (a PWA). On a member's phone, "Add to
+Home Screen" (Chrome menu on Android, Share menu in Safari on iPhone) puts an
+icon on the home screen that opens the member dashboard full-screen, with no
+browser bars. There is no app store, no fee and no second codebase.
+
+- `src/app/manifest.ts` sets the name, colours, start page (`/member`) and
+  two shortcuts (today's workout, progress). The name follows
+  `NEXT_PUBLIC_GYM_NAME`.
+- The icons are a plain "CGR" monogram: `public/icons/icon-192.png`,
+  `icon-512.png`, `icon-maskable-512.png` (extra padding, so Android can crop
+  it into a circle), plus `src/app/icon.png` (browser tab) and
+  `src/app/apple-icon.png` (iPhone). **Replace them with the gym's logo** at
+  the same file names and sizes when there is one.
+- It is not an offline app: there is no service worker, so it needs a
+  connection like any website. That is deliberate - membership status and
+  payments should never be shown from a stale copy.
 
 ## Scripts
 
@@ -264,10 +342,12 @@ looks unfamiliar coming from Prisma 5/6 examples online:
 - The client is generated to `src/generated/prisma` (gitignored,
   regenerated by `pnpm db:generate`, which also runs automatically via
   `postinstall`) rather than `node_modules/.prisma/client`.
-- `PrismaClient` requires an explicit driver adapter now - see
-  `src/lib/db.ts`, which wires up `@prisma/adapter-neon` (Neon's own
-  WebSocket-based driver, `@neondatabase/serverless`) rather than the more
-  generic `@prisma/adapter-pg` + `pg`.
+- `PrismaClient` requires an explicit driver adapter now. `src/lib/prisma-adapter.ts`
+  chooses it from the connection string: `@prisma/adapter-neon` (Neon's own
+  WebSocket-based driver, `@neondatabase/serverless`) for a `*.neon.tech`
+  host, and the generic `@prisma/adapter-pg` + `pg` for anything else, such
+  as the `docker compose` database. `src/lib/db.ts`, `prisma/seed.ts` and
+  `scripts/reset-admin-password.ts` all go through that one function.
 - **This app deploys to Vercel's serverless functions, which is exactly
   why the Neon-specific adapter matters, not just a generic Postgres one.**
   A traditional `pg.Pool` opens a fresh TCP+TLS connection on every cold
@@ -282,11 +362,10 @@ looks unfamiliar coming from Prisma 5/6 examples online:
   (`config/constants.ts`) - wider `maxWait`/`timeout` than Prisma's
   defaults, as a second line of defense on top of the driver change above.
 - **If this app ever moves off Neon** (Supabase, self-hosted Postgres,
-  etc.), swap `@prisma/adapter-neon` + `@neondatabase/serverless` back for
-  `@prisma/adapter-pg` + `pg` in `src/lib/db.ts`, `prisma/seed.ts`, and
-  `scripts/reset-admin-password.ts` - the Neon driver only works against
-  Neon's own infrastructure (or anything speaking its wire protocol, like
-  Xata).
+  etc.), nothing needs swapping: a non-Neon hostname already uses `pg`. Set
+  `DATABASE_DRIVER=pg` if a custom domain in front of Neon confuses the
+  detection. The Neon driver only works against Neon's own infrastructure
+  (or anything speaking its wire protocol, like Xata).
 
 ## Editing the public website
 
@@ -367,7 +446,16 @@ dropdowns open.
 
 Modeled in the database, not yet wired to a page:
 
-- Attendance ingestion endpoint
+- **Fingerprint door sensor.** Today the owner has to re-register a member on
+  the sensor by hand whenever they pay. The plan is to let the website do the
+  bookkeeping: an endpoint the sensor (or a small bridge program on the front
+  desk PC) calls to record entries into `Attendance`, and an "allowed
+  members" list - everyone whose membership is currently valid - that the
+  bridge reads to enable or disable fingerprints automatically after each
+  payment or expiry. How the second half works depends entirely on the
+  sensor's brand and model (some push over the network, some only expose a
+  vendor SDK on the PC), so it has not been built yet. The `AttendanceDevice`
+  and `Attendance` tables already exist, and the seed adds one device.
 - Wiring `modules/payments/providers/razorpay-provider.ts` up to a real
   checkout flow and webhook route
 
@@ -378,15 +466,31 @@ pnpm test
 ```
 
 - `tests/unit/` - pure functions (BMI, goal progress percentage, membership
-  expiry), no database required.
-- `tests/integration/tenant-isolation.test.ts` - needs `DATABASE_URL` pointed
-  at a real (disposable/test) Postgres database with migrations applied.
+  expiry, phone-number normalization, IST date handling), no database
+  required.
+- `tests/integration/` - `tenant-isolation` and `workout-completion` need
+  `DATABASE_URL` pointed at a real (disposable/test) Postgres database with
+  migrations applied. The second one proves a member can only tick off days
+  of their own plan, never another member's or another gym's.
+- `vitest.config.ts` aliases the `server-only` package to a stub
+  (`tests/stubs/server-only.ts`) so service modules can be imported outside
+  Next.js; the real package still guards them in the app.
+- Screens were checked in a real browser at phone (390px), tablet (820px)
+  and laptop (1366px) widths for page overflow and console errors, for the
+  public site, the member app and the admin app. Rerun that after any layout
+  change; a page that scrolls sideways on a phone is a bug.
 
 ## Production checklist
 
 ```text
 [ ] Production PostgreSQL configured, `pnpm prisma migrate deploy` run
 [ ] Fresh SESSION_SECRET generated, seeded dev credentials never reused
+[ ] `pnpm db:seed` NOT run against this database (it is test data only);
+    the real admin is created another way, and the gym's details are
+    entered in Admin -> Settings
+[ ] NEXT_PUBLIC_GYM_NAME set to the real name (it names the installed app)
+[ ] Icons in public/icons replaced with the gym's logo, and real photos in
+    public/images (the starter photos are low resolution)
 [ ] HTTPS + secure cookies on (NODE_ENV=production)
 [ ] Tenant isolation + auth tests passing
 [ ] Vercel env vars set: DATABASE_URL, DIRECT_URL, SESSION_SECRET,
