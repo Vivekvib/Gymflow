@@ -22,7 +22,9 @@ export async function upsertWorkoutPlanAction(
     await upsertWorkoutPlan(session.gymId, memberId, parsed.data, session.adminId);
   } catch (error) {
     if (error instanceof NotFoundError) return actionError("Member not found.");
-    return actionError(error instanceof Error ? error.message : "Failed to save workout plan");
+    // Never show raw database text to the front desk; the log keeps the detail.
+    console.error("Failed to save workout plan", { memberId, error });
+    return actionError("Couldn't save the plan. Please try again.");
   }
 
   revalidatePath(`/admin/workouts/${memberId}`);
