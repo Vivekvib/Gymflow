@@ -127,6 +127,17 @@ export function startOfZonedDay(date: Date, timeZone: string = DEFAULT_TIMEZONE)
   return zonedMidnightToUtc(year, month, day, timeZone);
 }
 
+/**
+ * Midnight at the start of the gym day that is `days` calendar days after the
+ * day containing `date` (before it, when negative). 0 is the same as
+ * startOfZonedDay. Counts calendar days, not 24-hour blocks, so it stays
+ * correct across a daylight-saving change.
+ */
+export function startOfZonedDayOffset(date: Date, days: number, timeZone: string = DEFAULT_TIMEZONE): Date {
+  const { year, month, day } = zonedParts(date, timeZone);
+  return zonedMidnightToUtc(year, month, day + days, timeZone);
+}
+
 export function startOfZonedMonth(date: Date, timeZone: string = DEFAULT_TIMEZONE): Date {
   const { year, month } = zonedParts(date, timeZone);
   return zonedMidnightToUtc(year, month, 1, timeZone);

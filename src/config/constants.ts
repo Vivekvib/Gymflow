@@ -1,10 +1,20 @@
-/** A membership counts as "expiring soon" inside this many days of today. */
-export const EXPIRING_SOON_DAYS = 30;
+/**
+ * A membership is "expiring soon" - badge, Renew prompts and the renewals
+ * list all use this one window - when this many days or fewer are left,
+ * counting today. See modules/membership/state.ts.
+ */
+export const EXPIRING_SOON_DAYS = 7;
+
+/** A lapsed membership stays on the renewals-due list for this many days. */
+export const RENEWAL_LAPSED_LOOKBACK_DAYS = 30;
 
 /** Rows per page on the admin members list. */
 export const DEFAULT_PAGE_SIZE = 20;
 
-/** Buckets shown on the admin dashboard's "expiring memberships" card. */
+/**
+ * "Ending within N days" counts on the admin dashboard, and the `within`
+ * values the members list accepts when opened from them.
+ */
 export const DASHBOARD_EXPIRY_WINDOWS = [7, 15, 30] as const;
 
 /**
