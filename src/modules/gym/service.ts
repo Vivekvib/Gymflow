@@ -2,10 +2,21 @@ import "server-only";
 import { db } from "@/lib/db";
 import { NotFoundError } from "@/lib/errors";
 import { recordAuditLog } from "@/lib/audit";
+import { DEFAULT_TIMEZONE } from "@/lib/dates";
 import type { UpdateGymInput } from "@/modules/gym/validation";
 
 export async function getGym(gymId: string) {
   return db.gym.findUnique({ where: { id: gymId } });
+}
+
+/**
+ * The gym's own timezone, which decides what "today" and "this month" mean.
+ * Falls back to India if the gym row is missing. One copy: the dashboard,
+ * member list and workouts all need it.
+ */
+export async function getGymTimezone(gymId: string): Promise<string> {
+  const gym = await db.gym.findUnique({ where: { id: gymId }, select: { timezone: true } });
+  return gym?.timezone ?? DEFAULT_TIMEZONE;
 }
 
 /**

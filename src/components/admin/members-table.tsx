@@ -16,7 +16,7 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { formatDate } from "@/lib/dates";
 import { formatPhoneDisplay, toTelHref, toWhatsAppUrl } from "@/lib/phone";
 import { cn } from "@/lib/utils";
-import { getMemberStatusDisplay } from "@/modules/members/types";
+import { getMembershipDisplay } from "@/modules/membership/state";
 import type { MemberListItem, MemberListResult, MemberStatusFilter } from "@/modules/members/types";
 
 interface MembersTableProps {
@@ -28,12 +28,13 @@ interface MembersTableProps {
   gymName: string;
 }
 
+// Wording comes from the membership module, so a filter reads exactly like the badges it finds.
 const STATUS_OPTIONS: { value: MemberStatusFilter; label: string }[] = [
   { value: "ALL", label: "All statuses" },
-  { value: "ACTIVE", label: "Active" },
-  { value: "EXPIRING", label: "Expiring soon" },
-  { value: "EXPIRED", label: "Expired" },
-  { value: "INACTIVE", label: "Inactive" },
+  ...(["ACTIVE", "EXPIRING", "EXPIRED", "INACTIVE"] as const).map((value) => ({
+    value,
+    label: getMembershipDisplay(value).label,
+  })),
 ];
 
 function whatsAppHref(member: MemberListItem, gymName: string): string {
@@ -42,7 +43,7 @@ function whatsAppHref(member: MemberListItem, gymName: string): string {
 }
 
 function MemberStatusBadge({ member, className }: { member: MemberListItem; className?: string }) {
-  const display = getMemberStatusDisplay(member.status, member.membershipEnd);
+  const display = getMembershipDisplay(member.status);
   return (
     <Badge tone={display.tone} className={className}>
       {display.label}
@@ -52,7 +53,7 @@ function MemberStatusBadge({ member, className }: { member: MemberListItem; clas
 
 /** Call, WhatsApp, and (when a membership needs it) Renew - the three things done from this list. */
 function MemberActions({ member, gymName }: { member: MemberListItem; gymName: string }) {
-  const needsRenewal = member.status === "EXPIRING" || member.status === "EXPIRED";
+  const needsPayment = member.nextAction === "RENEW" || member.nextAction === "ADD_PAYMENT";
   const iconButton = cn(buttonVariants({ variant: "secondary", size: "sm" }), "h-10 w-10 px-0 xl:h-8 xl:w-8");
 
   return (
@@ -69,12 +70,12 @@ function MemberActions({ member, gymName }: { member: MemberListItem; gymName: s
       >
         <MessageCircle className="h-4 w-4" aria-hidden />
       </a>
-      {needsRenewal && member.status !== "INACTIVE" ? (
+      {needsPayment ? (
         <Link
           href={`/admin/payments/new?memberId=${member.id}`}
           className={cn(buttonVariants({ size: "sm" }), "h-10 px-4 xl:h-8")}
         >
-          {member.membershipEnd ? "Renew" : "Add payment"}
+          {member.nextAction === "ADD_PAYMENT" ? "Add payment" : "Renew"}
         </Link>
       ) : null}
     </div>
@@ -121,7 +122,7 @@ export function MembersTable({
         <p className="text-sm text-[var(--color-ink-muted)]">
           Showing memberships ending in the next {currentWithin} days.{" "}
           <Link
-            href="/admin/members?status=EXPIRING"
+            href="/admin/members?status=EXPIRING&within=30"
             className="font-medium text-[var(--color-accent)] hover:underline"
           >
             Show the next 30 days

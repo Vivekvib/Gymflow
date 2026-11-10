@@ -4,8 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { formatDate } from "@/lib/dates";
 import { formatPhoneDisplay } from "@/lib/phone";
-import { getMemberStatus } from "@/modules/members/service";
-import { getMemberStatusDisplay } from "@/modules/members/types";
+import { getMembership, getMembershipDisplay } from "@/modules/membership/state";
 import { setMemberActiveAction } from "@/modules/members/actions";
 import type { Member } from "@/generated/prisma/client";
 
@@ -14,8 +13,8 @@ async function toggleMemberActive(memberId: string, active: boolean): Promise<vo
   await setMemberActiveAction(memberId, active);
 }
 
-export function MemberProfileCard({ member }: { member: Member }) {
-  const status = getMemberStatusDisplay(getMemberStatus(member), member.membershipEnd);
+export function MemberProfileCard({ member, timeZone }: { member: Member; timeZone?: string }) {
+  const status = getMembershipDisplay(getMembership(member, { timeZone }).state);
   // Binding args onto the Server Action lets a plain <form> submit it
   // without a client component - see Next.js Server Actions docs on
   // passing extra arguments via `.bind()`. The wrapper discards the

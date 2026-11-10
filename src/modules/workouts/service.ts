@@ -3,7 +3,8 @@ import { db } from "@/lib/db";
 import { NotFoundError } from "@/lib/errors";
 import { recordAuditLog } from "@/lib/audit";
 import { DB_TRANSACTION_OPTIONS } from "@/config/constants";
-import { DEFAULT_TIMEZONE, startOfZonedDay, startOfZonedWeek, zonedDayOfWeek } from "@/lib/dates";
+import { startOfZonedDay, startOfZonedWeek, zonedDayOfWeek } from "@/lib/dates";
+import { getGymTimezone } from "@/modules/gym/service";
 import type { WorkoutPlanInput } from "@/modules/workouts/validation";
 
 /**
@@ -127,11 +128,6 @@ export async function upsertWorkoutPlan(
 // ---------------------------------------------------------------------------
 // Member-side tracking: which plan days the member has done
 // ---------------------------------------------------------------------------
-
-async function getGymTimezone(gymId: string): Promise<string> {
-  const gym = await db.gym.findUnique({ where: { id: gymId }, select: { timezone: true } });
-  return gym?.timezone ?? DEFAULT_TIMEZONE;
-}
 
 export interface WorkoutOverview {
   plan: NonNullable<Awaited<ReturnType<typeof getWorkoutPlan>>>;

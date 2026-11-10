@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { requireAdminSession } from "@/modules/auth/guards";
 import { getMemberDetail } from "@/modules/members/service";
+import { getGymTimezone } from "@/modules/gym/service";
 import { MemberProfileCard } from "@/components/admin/member-profile";
 import { PaymentHistory } from "@/components/admin/payment-history";
 import { MemberResetPasswordForm } from "@/components/admin/member-reset-password-form";
@@ -15,7 +16,10 @@ interface MemberDetailPageProps {
 export default async function MemberDetailPage({ params }: MemberDetailPageProps) {
   const { memberId } = await params;
   const session = await requireAdminSession();
-  const member = await getMemberDetail(session.gymId, memberId);
+  const [member, timeZone] = await Promise.all([
+    getMemberDetail(session.gymId, memberId),
+    getGymTimezone(session.gymId),
+  ]);
 
   // Not found and "belongs to another gym" render identically - tenant
   // isolation must never be observable as a different error message.
@@ -27,7 +31,7 @@ export default async function MemberDetailPage({ params }: MemberDetailPageProps
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-1">
-          <MemberProfileCard member={member} />
+          <MemberProfileCard member={member} timeZone={timeZone} />
 
           <Card>
             <CardHeader>

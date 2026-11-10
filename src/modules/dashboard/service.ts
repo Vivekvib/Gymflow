@@ -3,18 +3,20 @@ import { db } from "@/lib/db";
 import {
   addDays,
   zonedDaysUntil,
-  DEFAULT_TIMEZONE,
   lastMonthStarts,
   startOfZonedDay,
   startOfZonedMonth,
 } from "@/lib/dates";
 import { DASHBOARD_EXPIRY_WINDOWS } from "@/config/constants";
+import { getGymTimezone } from "@/modules/gym/service";
+import { canEnterWhere, endsWithinDays, renewalsDueWhere } from "@/modules/membership/query";
 
 type ExpiryWindow = (typeof DASHBOARD_EXPIRY_WINDOWS)[number];
 
 export interface DashboardStats {
   totalMembers: number;
-  activeMembers: number;
+  /** Members who may walk in today: active account, last paid day not yet passed. */
+  currentMembers: number;
   newMembersThisMonth: number;
   expiringCounts: Record<ExpiryWindow, number>;
   paymentsTodayPaise: number;
@@ -39,16 +41,6 @@ export interface RevenuePoint {
   paymentCount: number;
 }
 
-/** Renewals list reaches this far back, so recently lapsed members aren't lost. */
-const LAPSED_LOOKBACK_DAYS = 30;
-/** ...and this far ahead. */
-const RENEWAL_LOOKAHEAD_DAYS = 7;
-
-async function getGymTimezone(gymId: string): Promise<string> {
-  const gym = await db.gym.findUnique({ where: { id: gymId }, select: { timezone: true } });
-  return gym?.timezone ?? DEFAULT_TIMEZONE;
-}
-
 /**
  * A handful of independent aggregate queries, run in parallel with
  * Promise.all rather than fetched-then-computed-in-JS - each is a COUNT or
@@ -70,7 +62,7 @@ export async function getDashboardStats(gymId: string): Promise<DashboardStats> 
 
   const [
     totalMembers,
-    activeMembers,
+    currentMembers,
     newMembersThisMonth,
     expiringCountsByWindow,
     paymentsToday,
@@ -78,16 +70,12 @@ export async function getDashboardStats(gymId: string): Promise<DashboardStats> 
     paymentsLastMonth,
   ] = await Promise.all([
     db.member.count({ where: { gymId } }),
-    db.member.count({ where: { gymId, active: true, membershipEnd: { gt: now } } }),
+    db.member.count({ where: { gymId, ...canEnterWhere({ now, timeZone }) } }),
     db.member.count({ where: { gymId, joinDate: { gte: startOfMonth } } }),
     Promise.all(
       DASHBOARD_EXPIRY_WINDOWS.map((days) =>
         db.member.count({
-          where: {
-            gymId,
-            active: true,
-            membershipEnd: { gte: now, lte: addDays(now, days) },
-          },
+          where: { gymId, active: true, membershipEnd: endsWithinDays(days, { now, timeZone }) },
         }),
       ),
     ),
@@ -111,7 +99,7 @@ export async function getDashboardStats(gymId: string): Promise<DashboardStats> 
 
   return {
     totalMembers,
-    activeMembers,
+    currentMembers,
     newMembersThisMonth,
     expiringCounts,
     paymentsTodayPaise: paymentsToday._sum.amountPaise ?? 0,
@@ -121,11 +109,11 @@ export async function getDashboardStats(gymId: string): Promise<DashboardStats> 
 }
 
 /**
- * Who the front desk should talk to: active members whose membership ends
- * within the next week, or lapsed in the last month. Soonest first, so the
- * most urgent are at the top and recently lapsed members sit alongside them.
- * Members who never paid at all are not listed - they're new sign-ups, not
- * renewals.
+ * Who the front desk should talk to: active members in their last
+ * EXPIRING_SOON_DAYS days, or lapsed within the last RENEWAL_LAPSED_LOOKBACK_DAYS
+ * (see config/constants.ts). Soonest first, so the most urgent are at the top
+ * and recently lapsed members sit alongside them. Members who never paid at
+ * all are not listed - they're new sign-ups, not renewals.
  */
 export async function getRenewalsDue(
   gymId: string,
@@ -133,14 +121,7 @@ export async function getRenewalsDue(
 ): Promise<{ items: RenewalDue[]; total: number }> {
   const timeZone = await getGymTimezone(gymId);
   const now = new Date();
-  const where = {
-    gymId,
-    active: true,
-    membershipEnd: {
-      gte: addDays(now, -LAPSED_LOOKBACK_DAYS),
-      lte: addDays(now, RENEWAL_LOOKAHEAD_DAYS),
-    },
-  };
+  const where = { gymId, ...renewalsDueWhere({ now, timeZone }) };
 
   const [rows, total] = await Promise.all([
     db.member.findMany({
