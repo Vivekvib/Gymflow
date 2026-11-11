@@ -1,6 +1,9 @@
 import { cn } from "@/lib/utils";
+import type { MembershipState } from "@/modules/membership/state";
 
 interface MembershipRingProps {
+  /** From getMembership(); decides the colours so the ring agrees with the badge beside it. */
+  state: MembershipState;
   /** Calendar days left; negative when lapsed; null when no membership has been paid for yet. */
   daysLeft: number | null;
   /** Length of the most recent plan, so the ring shows how much of it is left. */
@@ -15,10 +18,10 @@ const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
  * the plan runs down and changes colour in the last week, so it reads at a
  * glance without anyone having to find an expiry date.
  */
-export function MembershipRing({ daysLeft, planDays }: MembershipRingProps) {
+export function MembershipRing({ state, daysLeft, planDays }: MembershipRingProps) {
   const hasMembership = daysLeft !== null;
-  const lapsed = hasMembership && daysLeft < 0;
-  const endingSoon = hasMembership && daysLeft >= 0 && daysLeft <= 7;
+  const lapsed = hasMembership && state === "EXPIRED";
+  const endingSoon = hasMembership && state === "EXPIRING";
 
   const fraction = hasMembership && !lapsed ? Math.min(1, Math.max(0, daysLeft / Math.max(planDays, 1))) : 0;
   const arcColor = lapsed

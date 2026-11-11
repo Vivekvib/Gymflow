@@ -26,14 +26,19 @@ and **Member**.
   and member are independent sessions), Edge middleware route protection,
   rate-limited login, audit logging. **Members sign in with their member ID
   or their mobile number** - see [Signing in by mobile number](#signing-in-by-mobile-number).
+  A member the front desk switches off is signed out on their next request,
+  not when their 7-day cookie runs out.
 - **Members** - full CRUD (create, edit, deactivate/reactivate), search,
-  status filtering, pagination, sequential member-ID generation.
+  status filtering, pagination, sequential member-ID generation. Where a
+  member stands (Active, Expiring soon, Expired, No plan yet, Inactive) comes
+  from one module - see [Membership states](#membership-states).
 - **Payments** - record a payment, membership expiry auto-extends using the
   rule in [Membership expiry logic](#membership-expiry-logic), full payment
   history per member.
 - **Admin dashboard** - money first (collected this month vs last month,
-  collected today), then active / new members, a six-month revenue chart,
-  and a **Renewals due** list (next 7 days, with the most urgent first) where
+  collected today), then current / new members, a six-month revenue chart,
+  and a **Renewals due** list (ending in the next 7 days, or lapsed in the
+  last 30, most urgent first) where
   each row has Call, WhatsApp-reminder and Renew buttons. The member list has
   the same one-tap Call / WhatsApp / Renew actions, and searches by name,
   mobile number or member ID.
@@ -48,8 +53,10 @@ and **Member**.
   (no server round trip needed for a pure formula).
 - **Workout plans** - admin builds a per-member plan (days containing
   exercises, added/removed dynamically); the member sees a read-only view.
-  Editing always replaces the plan wholesale (no per-day diffing) - simple
-  and correct for a form that submits the whole plan each time.
+  The form submits the whole plan each time, and it is saved *in place*: a
+  day that stays keeps its identity (and the member's ticks on it), a day
+  that is removed takes its ticks with it, so a plan can still be edited
+  after a member has started ticking days off.
   Exercises are **picked, not typed**: choose a muscle group, then choose
   from only that group's exercises (570 in total, from the gym's own
   spreadsheet). Members see each exercise with a "Watch video" link where a
@@ -272,7 +279,8 @@ src/
 │
 ├── modules/
 │   ├── auth/             # session (Node), jwt (Edge+Node shared), password, guards, actions, validation
-│   ├── members/          # service, actions, validation, member-id generator
+│   ├── members/          # service, actions, validation, member-id generator, access (may this session continue?)
+│   ├── membership/       # state (pure: where a member stands), query (the same rules as Prisma filters)
 │   ├── payments/         # service, actions, validation, expiry (pure fn), providers/
 │   ├── progress/         # service, actions, validation, bmi.ts + goal-progress.ts (pure fns)
 │   ├── workouts/         # service, actions, validation (nested day/exercise plan editor)
@@ -289,8 +297,8 @@ src/
 
 middleware.ts             # Edge route guard for /admin/* and /member/*
 tests/
-├── unit/                 # bmi, membership-expiry (pure functions, no DB needed)
-└── integration/           # tenant-isolation (needs a real test database)
+├── unit/                 # bmi, membership-expiry, membership-state (pure functions, no DB needed)
+└── integration/           # tenant-isolation, membership-parity, workout-plan-edit, ... (need a real test database)
 ```
 
 ## Architecture
@@ -329,6 +337,51 @@ Current expiry: 2026-12-15, payment: 1 month -> new expiry: 2027-01-14
 Current expiry: 2026-08-15 (expired), payment date 2026-09-09, 1 month -> new expiry: 2026-10-09
 ```
 
+## Membership states
+
+Where a member stands is **derived, never stored**: a membership runs out on
+its own with no event to hang an update on, so the state is computed from two
+columns on `Member` (`active`, `membershipEnd`) plus "now". It is defined once,
+in `modules/membership/state.ts`, and everything else asks that module.
+
+| State | Meaning | Badge | Next action |
+|---|---|---|---|
+| `NEW` | joined, never paid | No plan yet | Add a first payment |
+| `ACTIVE` | paid, more than 7 days left | Active | none |
+| `EXPIRING` | 7 days or fewer left (0 on the last paid day) | Expiring soon | Renew |
+| `EXPIRED` | the last paid day has passed | Expired | Renew |
+| `INACTIVE` | switched off by an admin (wins over the rest) | Inactive | Reactivate |
+
+Rules that hold on every screen:
+
+- **Days are the gym's own calendar days (IST)**, not the server's (UTC).
+- **A membership is valid for the whole of its last paid day.** "Valid till
+  19 Nov" means 19 Nov at 8 pm still counts; it ends at midnight.
+- **"Expiring soon" is 7 days** everywhere (`EXPIRING_SOON_DAYS` in
+  `config/constants.ts`). The dashboard's 7 / 15 / 30 day links only widen the
+  *Expiring* list (`?status=EXPIRING&within=30`).
+- **"Current members"** (the dashboard tile) = may walk in today = active
+  account and last paid day not passed = `ACTIVE` + `EXPIRING`. The members
+  list's "Expired" filter also includes members who never paid (they need a
+  payment too).
+
+Two forms of the same rule exist, because a badge is drawn in TypeScript and a
+list or count is computed by Postgres: `getMembership()` (`state.ts`) and the
+`where` builders (`query.ts`: `membershipWhere`, `canEnterWhere`,
+`endsWithinDays`, `renewalsDueWhere`).
+`tests/integration/membership-parity.test.ts` checks both give the same answer
+for ~60 members on every boundary at six moments of the day, so they cannot
+drift apart unnoticed.
+
+**Changing a rule:** edit `state.ts` and `query.ts` together and run
+`pnpm test`; the parity test fails if they disagree. **Adding a state:** add it
+to `MEMBERSHIP_STATES`; the display table (`MEMBERSHIP_DISPLAY`) will not
+compile until it has a label, colour and next action. Do not write
+`membershipEnd < now` anywhere else.
+
+`canEnterWhere()` is also the allow-list query for the planned fingerprint
+door sensor (see [What's next](#whats-next)).
+
 ## Security
 
 - Argon2id password hashing; passwords are never logged or returned from
@@ -336,6 +389,10 @@ Current expiry: 2026-08-15 (expired), payment date 2026-09-09, 1 month -> new ex
 - HttpOnly, `Secure` (in production), `SameSite=Lax` session cookies.
 - Every mutation is re-validated and re-authorized server-side - the
   client's role is never trusted.
+- A member session is a signed cookie, so it is re-checked against the
+  database on every member request: an account switched off (or removed)
+  is signed out through `/member/session-ended`, which clears the cookie.
+  Admin sessions are not re-checked yet.
 - Login is rate-limited per IP+identifier (see the in-memory limiter's
   multi-instance caveat in `src/lib/rate-limit.ts`).
 - Administrative mutations are written to `AuditLog`.
@@ -471,7 +528,9 @@ Modeled in the database, not yet wired to a page:
   payment or expiry. How the second half works depends entirely on the
   sensor's brand and model (some push over the network, some only expose a
   vendor SDK on the PC), so it has not been built yet. The `AttendanceDevice`
-  and `Attendance` tables already exist, and the seed adds one device.
+  and `Attendance` tables already exist, and the seed adds one device. The
+  "allowed members" list is already one query: `canEnterWhere()` in
+  `modules/membership/query.ts`.
 - Wiring `modules/payments/providers/razorpay-provider.ts` up to a real
   checkout flow and webhook route
 
@@ -484,10 +543,13 @@ pnpm test
 - `tests/unit/` - pure functions (BMI, goal progress percentage, membership
   expiry, phone-number normalization, IST date handling), no database
   required.
-- `tests/integration/` - `tenant-isolation` and `workout-completion` need
-  `DATABASE_URL` pointed at a real (disposable/test) Postgres database with
-  migrations applied. The second one proves a member can only tick off days
-  of their own plan, never another member's or another gym's.
+- `tests/integration/` - need `DATABASE_URL` pointed at a real
+  (disposable/test) Postgres database with migrations applied.
+  `tenant-isolation` and `workout-completion` prove nobody can reach another
+  gym's data or tick off another member's days; `membership-parity` proves
+  the membership rule in TypeScript and in SQL agree; `workout-plan-edit`
+  covers editing a plan after ticks exist; `member-access` covers
+  switched-off members.
 - `vitest.config.ts` aliases the `server-only` package to a stub
   (`tests/stubs/server-only.ts`) so service modules can be imported outside
   Next.js; the real package still guards them in the app.

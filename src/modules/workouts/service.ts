@@ -3,7 +3,8 @@ import { db } from "@/lib/db";
 import { NotFoundError } from "@/lib/errors";
 import { recordAuditLog } from "@/lib/audit";
 import { DB_TRANSACTION_OPTIONS } from "@/config/constants";
-import { DEFAULT_TIMEZONE, startOfZonedDay, startOfZonedWeek, zonedDayOfWeek } from "@/lib/dates";
+import { startOfZonedDay, startOfZonedWeek, zonedDayOfWeek } from "@/lib/dates";
+import { getGymTimezone } from "@/modules/gym/service";
 import type { WorkoutPlanInput } from "@/modules/workouts/validation";
 
 /**
@@ -56,13 +57,20 @@ export async function listMembersWithPlanStatus(gymId: string) {
 }
 
 /**
- * Creates the member's plan if none exists, otherwise updates it -
- * replacing all days/exercises wholesale. Diffing which individual days or
- * exercises changed would add real complexity for no real benefit here:
- * the form always submits the entire plan, so delete-and-recreate inside
- * one transaction is simpler and just as correct. Plan *history* isn't
- * tracked (this always overwrites "the" plan) - the schema supports
- * multiple plans per member later if that's ever needed.
+ * Creates the member's plan if none exists, otherwise updates it to match the
+ * submitted form. The form always sends the whole plan, but days are saved
+ * *in place* rather than deleted and recreated: a member's "done" ticks point
+ * at a plan day, so recreating the day would orphan (and, because of the
+ * foreign key, block) every tick the member has already made.
+ *
+ * A submitted day keeps the identity of the existing day on the same weekday
+ * (first with first, second with second, for two sessions on one weekday).
+ * Days that are no longer in the form are removed together with their ticks;
+ * days on a new weekday are created. Exercises have no history attached, so
+ * each kept day's exercises are simply replaced.
+ *
+ * Plan *history* isn't tracked (this always overwrites "the" plan) - the
+ * schema supports multiple plans per member later if that's ever needed.
  */
 export async function upsertWorkoutPlan(
   gymId: string,
@@ -85,28 +93,57 @@ export async function upsertWorkoutPlan(
           data: { gymId, memberId, title: input.title, notes: input.notes || undefined },
         });
 
-    // Cascades to PlanExercise via the schema's onDelete: Cascade.
-    await tx.workoutPlanDay.deleteMany({ where: { workoutPlanId: planRecord.id } });
+    // Existing day ids waiting to be claimed, per weekday, in plan order.
+    const unclaimedByWeekday = new Map<number, string[]>();
+    if (existingPlan) {
+      const existingDays = await tx.workoutPlanDay.findMany({
+        where: { workoutPlanId: planRecord.id },
+        select: { id: true, dayOfWeek: true },
+        orderBy: [{ order: "asc" }, { id: "asc" }],
+      });
+      for (const day of existingDays) {
+        const queue = unclaimedByWeekday.get(day.dayOfWeek) ?? [];
+        queue.push(day.id);
+        unclaimedByWeekday.set(day.dayOfWeek, queue);
+      }
+    }
 
     for (const [dayIndex, day] of input.days.entries()) {
-      await tx.workoutPlanDay.create({
-        data: {
-          workoutPlanId: planRecord.id,
-          dayOfWeek: day.dayOfWeek,
-          title: day.title,
-          order: dayIndex,
-          exercises: {
-            create: day.exercises.map((exercise, exerciseIndex) => ({
-              name: exercise.name,
-              sets: exercise.sets,
-              reps: exercise.reps,
-              restSeconds: exercise.restSeconds,
-              notes: exercise.notes || undefined,
-              order: exerciseIndex,
-            })),
+      const exercises = day.exercises.map((exercise, exerciseIndex) => ({
+        name: exercise.name,
+        sets: exercise.sets,
+        reps: exercise.reps,
+        restSeconds: exercise.restSeconds,
+        notes: exercise.notes || undefined,
+        order: exerciseIndex,
+      }));
+
+      const reusedDayId = unclaimedByWeekday.get(day.dayOfWeek)?.shift();
+      if (reusedDayId) {
+        await tx.planExercise.deleteMany({ where: { workoutPlanDayId: reusedDayId } });
+        await tx.workoutPlanDay.update({
+          where: { id: reusedDayId },
+          data: { title: day.title, order: dayIndex, exercises: { create: exercises } },
+        });
+      } else {
+        await tx.workoutPlanDay.create({
+          data: {
+            workoutPlanId: planRecord.id,
+            dayOfWeek: day.dayOfWeek,
+            title: day.title,
+            order: dayIndex,
+            exercises: { create: exercises },
           },
-        },
-      });
+        });
+      }
+    }
+
+    // Whatever is still unclaimed was removed from the form. Its ticks have no
+    // plan day to point at any more, so they go with it (exercises cascade).
+    const removedDayIds = [...unclaimedByWeekday.values()].flat();
+    if (removedDayIds.length > 0) {
+      await tx.workoutCompletion.deleteMany({ where: { workoutPlanDayId: { in: removedDayIds } } });
+      await tx.workoutPlanDay.deleteMany({ where: { id: { in: removedDayIds } } });
     }
 
     return planRecord;
@@ -127,11 +164,6 @@ export async function upsertWorkoutPlan(
 // ---------------------------------------------------------------------------
 // Member-side tracking: which plan days the member has done
 // ---------------------------------------------------------------------------
-
-async function getGymTimezone(gymId: string): Promise<string> {
-  const gym = await db.gym.findUnique({ where: { id: gymId }, select: { timezone: true } });
-  return gym?.timezone ?? DEFAULT_TIMEZONE;
-}
 
 export interface WorkoutOverview {
   plan: NonNullable<Awaited<ReturnType<typeof getWorkoutPlan>>>;

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { DASHBOARD_EXPIRY_WINDOWS } from "@/config/constants";
+import { MEMBER_STATUS_FILTERS } from "@/modules/membership/state";
 import { normalizePhone, stripPhoneFormatting } from "@/lib/phone";
 
 /**
@@ -69,7 +70,7 @@ export type AdminResetPasswordInput = z.infer<typeof adminResetPasswordSchema>;
 
 export const memberListQuerySchema = z.object({
   query: z.string().trim().optional(),
-  status: z.enum(["ALL", "ACTIVE", "EXPIRING", "EXPIRED", "INACTIVE"]).default("ALL"),
+  status: z.enum(MEMBER_STATUS_FILTERS).default("ALL"),
   /**
    * Narrows the EXPIRING filter to memberships ending within this many days
    * (the dashboard's 7 / 15 / 30 day links). Anything else is ignored.

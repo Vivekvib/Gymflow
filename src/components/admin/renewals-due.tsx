@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/shared/empty-state";
-import { DASHBOARD_EXPIRY_WINDOWS } from "@/config/constants";
+import { DASHBOARD_EXPIRY_WINDOWS, EXPIRING_SOON_DAYS, RENEWAL_LAPSED_LOOKBACK_DAYS } from "@/config/constants";
 import { formatDate } from "@/lib/dates";
 import { toWhatsAppUrl } from "@/lib/phone";
 import { cn } from "@/lib/utils";
@@ -61,7 +61,7 @@ export function RenewalsDue({ items, total, gymName, expiringCounts }: RenewalsD
         <div className="p-4">
           <EmptyState
             title="No renewals due"
-            description="Nobody's membership ends in the next 7 days, and none lapsed in the last 30."
+            description={`Nobody's membership ends in the next ${EXPIRING_SOON_DAYS} days, and none lapsed in the last ${RENEWAL_LAPSED_LOOKBACK_DAYS}.`}
           />
         </div>
       ) : (

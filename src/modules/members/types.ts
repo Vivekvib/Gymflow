@@ -1,4 +1,16 @@
-export type MemberStatus = "ACTIVE" | "EXPIRING" | "EXPIRED" | "INACTIVE";
+import type {
+  MemberStatusFilter,
+  MembershipAction,
+  MembershipState,
+} from "@/modules/membership/state";
+
+/**
+ * Where a member stands. Defined, derived and worded in
+ * modules/membership/state.ts - this alias is only kept so list code can say
+ * "status".
+ */
+export type MemberStatus = MembershipState;
+export type { MemberStatusFilter };
 
 export interface MemberListItem {
   id: string;
@@ -9,6 +21,9 @@ export interface MemberListItem {
   membershipEnd: Date | null;
   active: boolean;
   status: MemberStatus;
+  /** Gym calendar days to the last paid day; negative once passed, null if never paid. */
+  daysLeft: number | null;
+  nextAction: MembershipAction;
 }
 
 export interface MemberListResult {
@@ -16,32 +31,4 @@ export interface MemberListResult {
   total: number;
   page: number;
   pageSize: number;
-}
-
-export type MemberStatusFilter = "ALL" | MemberStatus;
-
-export const MEMBER_STATUS_LABEL: Record<MemberStatus, string> = {
-  ACTIVE: "Active",
-  EXPIRING: "Expiring soon",
-  EXPIRED: "Expired",
-  INACTIVE: "Inactive",
-};
-
-export const MEMBER_STATUS_TONE: Record<MemberStatus, "success" | "warning" | "danger" | "neutral"> = {
-  ACTIVE: "success",
-  EXPIRING: "warning",
-  EXPIRED: "danger",
-  INACTIVE: "neutral",
-};
-
-/**
- * How a status should read on screen. A member who has joined but never paid
- * has no membership to be "expired" from, so they get their own label instead
- * of a red "Expired" - the underlying status (and the status filters) are unchanged.
- */
-export function getMemberStatusDisplay(status: MemberStatus, membershipEnd: Date | null) {
-  if (status === "EXPIRED" && membershipEnd === null) {
-    return { label: "No plan yet", tone: "neutral" as const };
-  }
-  return { label: MEMBER_STATUS_LABEL[status], tone: MEMBER_STATUS_TONE[status] };
 }

@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { ArrowRight, Phone } from "lucide-react";
 import { requireMemberSession } from "@/modules/auth/guards";
-import { getMemberDetail, getMemberStatus } from "@/modules/members/service";
+import { getMemberDetail } from "@/modules/members/service";
+import { getMembership, getMembershipDisplay } from "@/modules/membership/state";
 import { getGym } from "@/modules/gym/service";
 import { getProgressSummary } from "@/modules/progress/service";
 import { getWorkoutOverview } from "@/modules/workouts/service";
@@ -11,10 +12,9 @@ import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { PaymentHistory } from "@/components/admin/payment-history";
 import { MembershipRing } from "@/components/member/membership-ring";
-import { formatDate, zonedDaysUntil } from "@/lib/dates";
+import { formatDate } from "@/lib/dates";
 import { toTelHref } from "@/lib/phone";
 import { cn } from "@/lib/utils";
-import { getMemberStatusDisplay } from "@/modules/members/types";
 
 export default async function MemberDashboardPage() {
   const session = await requireMemberSession();
@@ -34,10 +34,12 @@ export default async function MemberDashboardPage() {
     return <p className="text-sm text-[var(--color-ink-muted)]">We couldn&apos;t load your membership details.</p>;
   }
 
-  const statusDisplay = getMemberStatusDisplay(getMemberStatus(member), member.membershipEnd);
-  const daysLeft = member.membershipEnd ? zonedDaysUntil(member.membershipEnd, gym?.timezone) : null;
+  // The badge, the ring, the "Valid till" line and the renew prompt all read
+  // this one result, so they can never disagree (see modules/membership).
+  const membership = getMembership(member, { timeZone: gym?.timezone });
+  const statusDisplay = getMembershipDisplay(membership.state);
   const planDays = member.payments[0]?.planDurationDays ?? 30;
-  const needsRenewal = daysLeft === null || daysLeft <= 7;
+  const needsRenewal = membership.nextAction === "RENEW" || membership.nextAction === "ADD_PAYMENT";
 
   const todaysDay = workouts?.plan.days.find((day) => day.dayOfWeek === workouts.todayDayOfWeek);
   const doneThisWeek = workouts ? workouts.plan.days.filter((day) => workouts.doneThisWeek.has(day.id)).length : 0;
@@ -49,7 +51,7 @@ export default async function MemberDashboardPage() {
       {/* Membership: the one thing the member opens this page to check. */}
       <Card className="lg:col-span-2">
         <CardContent className="flex flex-col items-center gap-6 p-5 sm:flex-row sm:gap-10 sm:p-8">
-          <MembershipRing daysLeft={daysLeft} planDays={planDays} />
+          <MembershipRing state={membership.state} daysLeft={membership.daysLeft} planDays={planDays} />
 
           <div className="w-full min-w-0 text-center sm:text-left">
             <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
@@ -60,7 +62,7 @@ export default async function MemberDashboardPage() {
             <p className="mt-3 text-sm text-[var(--color-ink-muted)]">
               {member.membershipEnd ? (
                 <>
-                  {daysLeft !== null && daysLeft < 0 ? "Ended on" : "Valid till"}{" "}
+                  {membership.state === "EXPIRED" ? "Ended on" : "Valid till"}{" "}
                   <span className="font-medium text-[var(--color-ink)]">{formatDate(member.membershipEnd)}</span>
                 </>
               ) : (
@@ -74,9 +76,9 @@ export default async function MemberDashboardPage() {
             {needsRenewal ? (
               <div className="mt-5">
                 <p className="text-sm text-[var(--color-ink)]">
-                  {daysLeft === null
+                  {membership.state === "NEW"
                     ? "Visit the front desk to start your membership."
-                    : daysLeft < 0
+                    : membership.state === "EXPIRED"
                       ? "Renew at the front desk to start training again."
                       : "Renew at the front desk to keep your plan going."}
                 </p>

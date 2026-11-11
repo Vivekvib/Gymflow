@@ -32,8 +32,8 @@ export function DashboardStatsGrid({ stats }: DashboardStatsProps) {
       <div className="grid grid-cols-3 gap-3 sm:gap-4">
         <StatTile label="Collected today" value={formatPaise(stats.paymentsTodayPaise)} />
         <StatTile
-          label="Active members"
-          value={stats.activeMembers.toLocaleString("en-IN")}
+          label="Current members"
+          value={stats.currentMembers.toLocaleString("en-IN")}
           hint={`of ${stats.totalMembers.toLocaleString("en-IN")} total`}
         />
         <StatTile
